@@ -109,7 +109,7 @@ int* broadcast_shapes(const int* a_shape, int a_ndim, const int* b_shape, int b_
     return result_shape;
 }
 
-Tensor* tensor_add(const Tensor* a, const Tensor* b) {
+Tensor* tensor_add1(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
     if (!out_shape) {
