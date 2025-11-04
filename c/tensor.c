@@ -516,7 +516,7 @@ int main() {
     Tensor* a = create_tensor_autograd(data1, shape, 1, 1);
     Tensor* b = create_tensor_autograd(data2, shape, 1, 1);
 
-    Tensor* c = tensor_add_autograd(a, b);  // c = a + b
+    Tensor* c = tensor_mul_autograd(a, b);  // c = a + b
 
     tensor_backward(c, NULL); // compute gradients
 
