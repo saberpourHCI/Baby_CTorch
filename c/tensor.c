@@ -269,7 +269,10 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
     int out_batch_ndim = (A_batch_ndim > B_batch_ndim) ? A_batch_ndim : B_batch_ndim;
 
     int* out_batch_shape = (int*)malloc(out_batch_ndim * sizeof(int));
-    if (!out_batch_shape) return NULL;
+    if (!out_batch_shape) {
+        fprint("b0");
+        return NULL;
+    }
 
     for (int i = 0; i < out_batch_ndim; i++) {
         int a_dim = (i >= out_batch_ndim - A_batch_ndim) ? A->shape[i - (out_batch_ndim - A_batch_ndim)] : 1;
@@ -287,6 +290,7 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
     int out_ndim = out_batch_ndim + 2;
     int* out_shape = (int*)malloc(out_ndim * sizeof(int));
     if (!out_shape) {
+        printf("b1");
         free(out_batch_shape);
         return NULL;
     }
