@@ -3,14 +3,33 @@
 #include <string.h>
 #include <stdbool.h>
 
-typedef struct {
+typedef struct Tensor Tensor;
+typedef void (*BackwardFn)(Tensor*);
+
+struct Tensor {
+    float* data;
+    float* grad;
+    int* shape;
+    int* strides;
+    int ndim;
+    int size;
+
+    // Autograd parameters
+    int requires_grad;    // 1 = track gradients
+    Tensor** parents;     // Array of parent tensors
+    int n_parents;        // Number of parent tensors
+    BackwardFn backward;  // Function for gradients computation
+};
+
+
+/*typedef struct {
     float* data;
     int* strides;
     int* shape;
     int ndim;
     int size;
     char* device; // This field is unused in your code; consider removing it if not needed.
-} Tensor;
+} Tensor;*/
 
 Tensor* create_tensor(float* data, const int* shape, int ndim) {
     if (data == NULL || shape == NULL || ndim <= 0) {
@@ -54,6 +73,31 @@ Tensor* create_tensor(float* data, const int* shape, int ndim) {
 
     return tensor;
 }
+
+Tensor* create_tensor_autograd(float* data, const int* shape, int ndim, int requires_grad) {
+    Tensor* t = create_tensor(data, shape, ndim);
+    if (!t) return NULL;
+
+    t->requires_grad = requires_grad;
+    t->grad = NULL;
+    t->parents = NULL;
+    t->n_parents = 0;
+    t->backward = NULL;
+
+    if (requires_grad) {
+        t->grad = (float*)calloc(t->size, sizeof(float));
+        if (!t->grad) {
+            free_tensor(t);
+            return NULL;
+        }
+    }
+
+    return t;
+}
+
+
+
+
 
 
 void free_tensor(Tensor* tensor) {
