@@ -97,6 +97,41 @@ Tensor* create_tensor_autograd(float* data, const int* shape, int ndim, int requ
 }
 
 
+void backward_add(Tensor* out) {
+    Tensor* A = out->parents[0];
+    Tensor* B = out->parents[1];
+
+    for (int i = 0; i < A->size; i++)
+        A->grad[i] += out->grad[i];
+
+    for (int i = 0; i < B->size; i++)
+        B->grad[i] += out->grad[i];
+}
+
+
+void backward_sub(Tensor* out) {
+    Tensor* A = out->parents[0];
+    Tensor* B = out->parents[1];
+
+    for (int i = 0; i < A->size; i++)
+        A->grad[i] += out->grad[i];
+
+    for (int i = 0; i < B->size; i++)
+        B->grad[i] -= out->grad[i];
+}
+
+
+void backward_mul(Tensor* out) {
+    Tensor* A = out->parents[0];
+    Tensor* B = out->parents[1];
+
+    for (int i = 0; i < A->size; i++) {
+        A->grad[i] += B->data[i] * out->grad[i];
+        B->grad[i] += A->data[i] * out->grad[i];
+    }
+}
+
+
 
 
 
@@ -120,7 +155,6 @@ void print_tensor_info(const Tensor* t) {
     }
     printf("]\n");
 }
-
 
 
 
@@ -153,6 +187,8 @@ int* broadcast_shapes(const int* a_shape, int a_ndim, const int* b_shape, int b_
     *out_ndim = ndim;
     return result_shape;
 }
+
+
 
 Tensor* tensor_add(const Tensor* a, const Tensor* b) {
     int out_ndim;
@@ -197,9 +233,6 @@ Tensor* tensor_add(const Tensor* a, const Tensor* b) {
     return out;
 }
 
-
-
-
 Tensor* tensor_sub(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
@@ -243,8 +276,6 @@ Tensor* tensor_sub(const Tensor* a, const Tensor* b) {
     return out;
 }
 
-
-
 Tensor* tensor_mul(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
@@ -287,6 +318,61 @@ Tensor* tensor_mul(const Tensor* a, const Tensor* b) {
     free(out_shape);
     return out;
 }
+
+
+
+Tensor* tensor_add_autograd(Tensor* A, Tensor* B) {
+    Tensor* out = tensor_add(A, B);
+    if (!out) return NULL;
+
+    if (A->requires_grad || B->requires_grad) {
+        out->requires_grad = 1;
+        out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
+        out->parents[0] = A;
+        out->parents[1] = B;
+        out->n_parents = 2;
+        out->backward = backward_add;
+        out->grad = (float*)calloc(out->size, sizeof(float));
+    }
+
+    return out;
+}
+
+Tensor* tensor_sub_autograd(Tensor* A, Tensor* B) {
+    Tensor* out = tensor_sub(A, B);
+    if (!out) return NULL;
+
+    if (A->requires_grad || B->requires_grad) {
+        out->requires_grad = 1;
+        out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
+        out->parents[0] = A;
+        out->parents[1] = B;
+        out->n_parents = 2;
+        out->backward = backward_sub;
+        out->grad = (float*)calloc(out->size, sizeof(float));
+    }
+
+    return out;
+}
+
+Tensor* tensor_mul_autograd(Tensor* A, Tensor* B){
+    Tensor* out = tensor_mul(A, B);
+    if (!out) return NULL;
+
+    if (A->requires_grad || B->requires_grad) {
+        out->requires_grad = 1;
+        out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
+        out->parents[0] = A;
+        out->parents[1] = B;
+        out->n_parents = 2;
+        out->backward = backward_mul;
+        out->grad = (float*)calloc(out->size, sizeof(float));
+    }
+
+    return out;
+}
+
+
 
 
 
