@@ -372,6 +372,7 @@ int main() {
     Tensor* B = create_tensor(B_data, B_shape, 4);
 
     Tensor* C = tensor_matmul(A, B);
+    printf("p1");
     if (!C) {
         printf("C not initialized!");
         return 1;
