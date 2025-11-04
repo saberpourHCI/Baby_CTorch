@@ -55,6 +55,31 @@ Tensor* create_tensor(float* data, const int* shape, int ndim) {
     return tensor;
 }
 
+
+void free_tensor(Tensor* tensor) {
+    if (!tensor) return;
+    free(tensor->shape);
+    free(tensor->strides);
+    free(tensor);
+}
+
+void print_tensor_info(const Tensor* t) {
+    printf("Tensor: ndim=%d, size=%d\n", t->ndim, t->size);
+    printf("Shape: [");
+    for (int i = 0; i < t->ndim; i++) {
+        printf("%d%s", t->shape[i], i == t->ndim - 1 ? "" : ", ");
+    }
+    printf("]\nStrides: [");
+    for (int i = 0; i < t->ndim; i++) {
+        printf("%d%s", t->strides[i], i == t->ndim - 1 ? "" : ", ");
+    }
+    printf("]\n");
+}
+
+
+
+
+
 // Computing the number of elements using the dimensions of the tensor
 int compute_size(const int* shape, int ndim) {
     int size = 1;
