@@ -370,7 +370,7 @@ int main() {
 
     Tensor* A = create_tensor(A_data, A_shape, 4);
     Tensor* B = create_tensor(B_data, B_shape, 4);
-
+    printf("p0");
     Tensor* C = tensor_matmul(A, B);
     printf("p1");
     if (!C) {
