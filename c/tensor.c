@@ -270,7 +270,7 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
 
     int* out_batch_shape = (int*)malloc(out_batch_ndim * sizeof(int));
     if (!out_batch_shape) {
-        fprint("b0");
+        printf("b0");
         return NULL;
     }
 
