@@ -374,9 +374,6 @@ Tensor* tensor_mul_autograd(Tensor* A, Tensor* B){
 
 
 
-
-
-
 // Uses broadcasting for the last 2 dimensions and accounts for the batch multiplicartion
 Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
     if (A->ndim < 2 || B->ndim < 2) {
@@ -487,8 +484,60 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
 }
 
 
+void tensor_backward(Tensor* t, float* grad) {
+    // Initialize gradient if it doesn't have a value
+    if (!t->grad) {
+        t->grad = (float*)calloc(t->size, sizeof(float));
+    }
+
+    if (grad) {
+        for (int i = 0; i < t->size; i++)
+            t->grad[i] += grad[i];
+    } else {
+        for (int i = 0; i < t->size; i++)
+            t->grad[i] = 1.0f;
+    }
+
+    if (t->backward) {
+        t->backward(t); // Calculate the gradients of the parents
+        for (int i = 0; i < t->n_parents; i++) {
+            tensor_backward(t->parents[i], NULL); // recursive backward all the way to the root of the graph
+        }
+    }
+}
 
 
+
+int main() {
+    float data1[3] = {1,2,3};
+    float data2[3] = {4,5,6};
+
+    int shape[1] = {3};
+    Tensor* a = create_tensor_autograd(data1, shape, 1, 1);
+    Tensor* b = create_tensor_autograd(data2, shape, 1, 1);
+
+    Tensor* c = tensor_add_autograd(a, b);  // c = a + b
+
+    tensor_backward(c, NULL); // compute gradients
+
+    printf("grad a: ");
+    for (int i = 0; i < a->size; i++) printf("%f ", a->grad[i]);
+    printf("\n");
+
+    printf("grad b: ");
+    for (int i = 0; i < b->size; i++) printf("%f ", b->grad[i]);
+    printf("\n");
+
+    free_tensor(a);
+    free_tensor(b);
+    free_tensor(c);
+    return 0;
+}
+
+
+
+
+/*
 int main() {
     printf("artin \n");
     // A: (2, 1, 2, 3)
@@ -529,6 +578,9 @@ int main() {
     free_tensor(C);
     return 0;
 }
+*/
+
+
 
 /*int main() {
     float data1[6] = {1, 2, 3, 4, 5, 6};
