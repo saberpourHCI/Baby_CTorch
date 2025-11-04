@@ -222,7 +222,7 @@ int main() {
     }
     printf("\n");
 
-    Tensor* D = tensor_add(A, B);
+    Tensor* D = tensor_subtract(A, B);
     if (!D) return 1;
 
     printf("Result:\n");
