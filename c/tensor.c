@@ -372,7 +372,10 @@ int main() {
     Tensor* B = create_tensor(B_data, B_shape, 4);
 
     Tensor* C = tensor_matmul(A, B);
-    if (!C) return 1;
+    if (!C) {
+        printf("C not initialized!");
+        return 1;
+    }
 
     printf("Output shape: (");
     for (int i = 0; i < C->ndim; i++)
