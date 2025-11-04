@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 typedef struct {
     float* data;
@@ -54,14 +55,106 @@ Tensor* create_tensor(float* data, const int* shape, int ndim) {
     return tensor;
 }
 
-int main()
-{
-    // MessageBox( 0, "Blah blah...", "My Windows app!", MB_SETFOREGROUND );
-    float data[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
-    int shape[2] = {2,3};
-    Tensor* s_pointer = create_tensor(data, shape, 2);
-    Tensor s = s_pointer[0];
-    printf("%d\n", s.ndim);
-    printf("%d\n", s_pointer->ndim);
+// Computing the number of elements using the dimensions of the tensor
+int compute_size(const int* shape, int ndim) {
+    int size = 1;
+    for (int i = 0; i < ndim; i++)
+        size *= shape[i];
+    return size;
+}
+
+
+int* broadcast_shapes(const int* a_shape, int a_ndim, const int* b_shape, int b_ndim, int* out_ndim) {
+    int ndim = (a_ndim > b_ndim) ? a_ndim : b_ndim;
+    int* result_shape = (int*)malloc(ndim * sizeof(int));
+    if (!result_shape) return NULL;
+
+    for (int i = 0; i < ndim; i++) {
+        int a_dim = (i >= ndim - a_ndim) ? a_shape[i - (ndim - a_ndim)] : 1;
+        int b_dim = (i >= ndim - b_ndim) ? b_shape[i - (ndim - b_ndim)] : 1;
+
+        if (a_dim != b_dim && a_dim != 1 && b_dim != 1) {
+            free(result_shape);
+            return NULL; // Incompatible shapes
+        }
+        result_shape[i] = (a_dim > b_dim) ? a_dim : b_dim;
+    }
+
+    *out_ndim = ndim;
+    return result_shape;
+}
+
+Tensor* tensor_add(const Tensor* a, const Tensor* b) {
+    int out_ndim;
+    int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
+    if (!out_shape) {
+        fprintf(stderr, "Error: Incompatible shapes for addition\n");
+        return NULL;
+    }
+
+    int out_size = compute_size(out_shape, out_ndim);
+    float* out_data = (float*)malloc(out_size * sizeof(float));
+    if (!out_data) {
+        free(out_shape);
+        fprintf(stderr, "Error: Memory allocation failed\n");
+        return NULL;
+    }
+
+    // Iterate through all elements using linear indexing
+    for (int i = 0; i < out_size; i++) {
+        // Compute multi-dimensional index
+        int idx_a = 0, idx_b = 0;
+        int rem = i;
+        for (int d = out_ndim - 1; d >= 0; d--) {
+            int coord = rem % out_shape[d];
+            rem /= out_shape[d];
+
+            int a_dim = (d >= out_ndim - a->ndim) ? a->shape[d - (out_ndim - a->ndim)] : 1;
+            int b_dim = (d >= out_ndim - b->ndim) ? b->shape[d - (out_ndim - b->ndim)] : 1;
+
+            int a_stride = (d >= out_ndim - a->ndim) ? a->strides[d - (out_ndim - a->ndim)] : 0;
+            int b_stride = (d >= out_ndim - b->ndim) ? b->strides[d - (out_ndim - b->ndim)] : 0;
+
+            if (a_dim != 1) idx_a += coord * a_stride;
+            if (b_dim != 1) idx_b += coord * b_stride;
+        }
+
+        out_data[i] = a->data[idx_a] + b->data[idx_b];
+    }
+
+    Tensor* out = create_tensor(out_data, out_shape, out_ndim);
+    free(out_shape);
+    return out;
+}
+
+
+
+
+
+
+int main() {
+    float data1[6] = {1, 2, 3, 4, 5, 6};
+    float data2[3] = {10, 20, 30};
+
+    int shape1[2] = {2, 3};
+    int shape2[1] = {3};
+
+    Tensor* A = create_tensor(data1, shape1, 2);
+    Tensor* B = create_tensor(data2, shape2, 1);
+
+    Tensor* C = tensor_add(A, B);
+    if (!C) return 1;
+
+    printf("Result:\n");
+    for (int i = 0; i < C->size; i++) {
+        printf("%.2f ", C->data[i]);
+    }
+    printf("\n");
+
+    free_tensor(A);
+    free_tensor(B);
+    free(C->data); // Since tensor_add allocates data
+    free_tensor(C);
     return 0;
 }
+
