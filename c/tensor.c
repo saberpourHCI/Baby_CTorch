@@ -355,6 +355,7 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
 
 
 int main() {
+    fprintf("artin \n");
     // A: (2, 1, 2, 3)
     // B: (1, 4, 3, 2)
     // Expected output: (2, 4, 2, 2)
