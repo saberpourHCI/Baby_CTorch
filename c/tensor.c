@@ -246,9 +246,151 @@ Tensor* tensor_mul(const Tensor* a, const Tensor* b) {
 
 
 
+// Uses broadcasting for the last 2 dimensions and accounts for the batch multiplicartion
+Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
+    if (A->ndim < 2 || B->ndim < 2) {
+        fprintf(stderr, "Error: Matmul requires ndim >= 2\n");
+        return NULL;
+    }
+
+    int A_m = A->shape[A->ndim - 2];
+    int A_k = A->shape[A->ndim - 1];
+    int B_k = B->shape[B->ndim - 2];
+    int B_n = B->shape[B->ndim - 1];
+
+    if (A_k != B_k) {
+        fprintf(stderr, "Error: Inner dimensions must match for matmul\n");
+        return NULL;
+    }
+
+    //Computing broadcasted batch shape===========================================
+    int A_batch_ndim = A->ndim - 2;
+    int B_batch_ndim = B->ndim - 2;
+    int out_batch_ndim = (A_batch_ndim > B_batch_ndim) ? A_batch_ndim : B_batch_ndim;
+
+    int* out_batch_shape = (int*)malloc(out_batch_ndim * sizeof(int));
+    if (!out_batch_shape) return NULL;
+
+    for (int i = 0; i < out_batch_ndim; i++) {
+        int a_dim = (i >= out_batch_ndim - A_batch_ndim) ? A->shape[i - (out_batch_ndim - A_batch_ndim)] : 1;
+        int b_dim = (i >= out_batch_ndim - B_batch_ndim) ? B->shape[i - (out_batch_ndim - B_batch_ndim)] : 1;
+
+        if (a_dim != b_dim && a_dim != 1 && b_dim != 1) {
+            fprintf(stderr, "Error: Incompatible batch dimensions for matmul\n");
+            free(out_batch_shape);
+            return NULL;
+        }
+        out_batch_shape[i] = (a_dim > b_dim) ? a_dim : b_dim;
+    }
+
+    //Create final output shape ===========================================
+    int out_ndim = out_batch_ndim + 2;
+    int* out_shape = (int*)malloc(out_ndim * sizeof(int));
+    if (!out_shape) {
+        free(out_batch_shape);
+        return NULL;
+    }
+
+    memcpy(out_shape, out_batch_shape, out_batch_ndim * sizeof(int));
+    out_shape[out_ndim - 2] = A_m;
+    out_shape[out_ndim - 1] = B_n;
+
+    int out_size = compute_size(out_shape, out_ndim);
+    float* out_data = (float*)calloc(out_size, sizeof(float));
+    if (!out_data) {
+        free(out_batch_shape);
+        free(out_shape);
+        fprintf(stderr, "Error: Memory allocation failed\n");
+        return NULL;
+    }
+
+    //Iterate over all broadcasted batches ===========================================
+    int total_batches = compute_size(out_batch_shape, out_batch_ndim);
+
+    for (int batch_idx = 0; batch_idx < total_batches; batch_idx++) {
+        // Compute multi-dimensional batch index
+        int rem = batch_idx;
+        int a_offset = 0;
+        int b_offset = 0;
+
+        for (int d = out_batch_ndim - 1; d >= 0; d--) {
+            int coord = rem % out_batch_shape[d];
+            rem /= out_batch_shape[d];
+
+            int a_dim = (d >= out_batch_ndim - A_batch_ndim) ? A->shape[d - (out_batch_ndim - A_batch_ndim)] : 1;
+            int b_dim = (d >= out_batch_ndim - B_batch_ndim) ? B->shape[d - (out_batch_ndim - B_batch_ndim)] : 1;
+
+            int a_stride = (d >= out_batch_ndim - A_batch_ndim) ? A->strides[d - (out_batch_ndim - A_batch_ndim)] : 0;
+            int b_stride = (d >= out_batch_ndim - B_batch_ndim) ? B->strides[d - (out_batch_ndim - B_batch_ndim)] : 0;
+
+            if (a_dim != 1) a_offset += coord * a_stride;
+            if (b_dim != 1) b_offset += coord * b_stride;
+        }
+
+        a_offset *= (A_m * A_k);
+        b_offset *= (B_k * B_n);
+        int c_offset = batch_idx * (A_m * B_n);
+
+        //Matrix multiplication per batch ===========================================
+        for (int i = 0; i < A_m; i++) {
+            for (int j = 0; j < B_n; j++) {
+                float sum = 0.0f;
+                for (int k = 0; k < A_k; k++) {
+                    float a_val = A->data[a_offset + i * A_k + k];
+                    float b_val = B->data[b_offset + k * B_n + j];
+                    sum += a_val * b_val;
+                }
+                out_data[c_offset + i * B_n + j] = sum;
+            }
+        }
+    }
+
+    Tensor* out = create_tensor(out_data, out_shape, out_ndim);
+    free(out_shape);
+    free(out_batch_shape);
+    return out;
+}
+
+
 
 
 int main() {
+    // A: (2, 1, 2, 3)
+    // B: (1, 4, 3, 2)
+    // Expected output: (2, 4, 2, 2)
+    float A_data[2 * 1 * 2 * 3];
+    float B_data[1 * 4 * 3 * 2];
+
+    for (int i = 0; i < 12; i++) A_data[i] = i + 1;     // Fill with 1..12
+    for (int i = 0; i < 24; i++) B_data[i] = (i + 1) * 0.5;
+
+    int A_shape[4] = {2, 1, 2, 3};
+    int B_shape[4] = {1, 4, 3, 2};
+
+    Tensor* A = create_tensor(A_data, A_shape, 4);
+    Tensor* B = create_tensor(B_data, B_shape, 4);
+
+    Tensor* C = tensor_matmul(A, B);
+    if (!C) return 1;
+
+    printf("Output shape: (");
+    for (int i = 0; i < C->ndim; i++)
+        printf("%d%s", C->shape[i], (i == C->ndim - 1) ? ")\n" : ", ");
+    printf("Total elements: %d\n", C->size);
+
+    // Print first few elements
+    for (int i = 0; i < (C->size < 10 ? C->size : 10); i++)
+        printf("%.2f ", C->data[i]);
+    printf("...\n");
+
+    free_tensor(A);
+    free_tensor(B);
+    free(C->data);
+    free_tensor(C);
+    return 0;
+}
+
+/*int main() {
     float data1[6] = {1, 2, 3, 4, 5, 6};
     float data2[3] = {10, 20, 30};
 
@@ -284,4 +426,4 @@ int main() {
     free_tensor(D);
     return 0;
 }
-
+*/
