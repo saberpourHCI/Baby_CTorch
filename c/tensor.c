@@ -331,8 +331,8 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
             if (b_dim != 1) b_offset += coord * b_stride;
         }
 
-        a_offset *= (A_m * A_k);
-        b_offset *= (B_k * B_n);
+        // a_offset *= (A_m * A_k);
+        // b_offset *= (B_k * B_n);
         int c_offset = batch_idx * (A_m * B_n);
 
         //Matrix multiplication per batch ===========================================
