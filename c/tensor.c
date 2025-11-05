@@ -32,6 +32,16 @@ struct Tensor {
     char* device; // This field is unused in your code; consider removing it if not needed.
 } Tensor;*/
 
+
+void free_tensor(Tensor* tensor) {
+    if (!tensor) return;
+    free(tensor->shape);
+    free(tensor->strides);
+    free(tensor);
+}
+
+
+
 Tensor* create_tensor(float* data, const int* shape, int ndim) {
     if (data == NULL || shape == NULL || ndim <= 0) {
         fprintf(stderr, "Invalid input parameters\n");
@@ -135,13 +145,6 @@ void backward_mul(Tensor* out) {
 
 
 
-
-void free_tensor(Tensor* tensor) {
-    if (!tensor) return;
-    free(tensor->shape);
-    free(tensor->strides);
-    free(tensor);
-}
 
 void print_tensor_info(const Tensor* t) {
     printf("Tensor: ndim=%d, size=%d\n", t->ndim, t->size);
