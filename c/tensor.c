@@ -697,7 +697,6 @@ void tensor_backward(Tensor* t, float* grad) {
 }
 
 
-
 int main() {
     float data1[3] = {1,2,3};
     int shape1[1] = {3};
