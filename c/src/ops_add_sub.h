@@ -16,4 +16,4 @@ Tensor* tensor_add_autograd(Tensor* A, Tensor* B);
 
 Tensor* tensor_sub_autograd(Tensor* A, Tensor* B);
 
-#endif OPS_ADD_SUB
+#endif

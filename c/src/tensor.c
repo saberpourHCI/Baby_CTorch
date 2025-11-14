@@ -12,7 +12,7 @@ void free_tensor(Tensor* tensor) {
     free(tensor);
 }
 
-Tensor* create_tensor(float* data, const int* shape, int ndim) {
+Tensor* create_tensor(float* data, const int* shape, int ndim, Device dev) {
     if (data == NULL || shape == NULL || ndim <= 0) {
         fprintf(stderr, "Invalid input parameters\n");
         return NULL;
@@ -52,11 +52,19 @@ Tensor* create_tensor(float* data, const int* shape, int ndim) {
         stride *= shape[i];
     }
 
+    if(dev == DEVICE_CPU || dev == DEVICE_CUDA) {
+        tensor->device = dev;
+    }
+    else {
+        tensor->device = DEVICE_CPU;
+    }
+    
+
     return tensor;
 }
 
-Tensor* create_tensor_autograd(float* data, const int* shape, int ndim, int requires_grad) {
-    Tensor* t = create_tensor(data, shape, ndim);
+Tensor* create_tensor_autograd(float* data, const int* shape, int ndim, int requires_grad, Device dev) {
+    Tensor* t = create_tensor(data, shape, ndim, dev);
     if (!t) return NULL;
 
     t->requires_grad = requires_grad;
@@ -76,6 +84,16 @@ Tensor* create_tensor_autograd(float* data, const int* shape, int ndim, int requ
     return t;
 }
 
+
+const char* device_to_string(Device d) {
+    switch (d) {
+        case DEVICE_CPU:  return "CPU";
+        case DEVICE_CUDA: return "CUDA";
+        default:       return "UNKNOWN";
+    }
+}
+
+
 void print_tensor_info(const Tensor* t) {
     printf("Tensor: ndim=%d, size=%d\n", t->ndim, t->size);
     printf("Shape: [");
@@ -87,6 +105,8 @@ void print_tensor_info(const Tensor* t) {
         printf("%d%s", t->strides[i], i == t->ndim - 1 ? "" : ", ");
     }
     printf("]\n");
+
+    printf("Device is: %s\n", device_to_string(t->device));
 }
 
 int compute_size(const int* shape, int ndim) {

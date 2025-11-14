@@ -116,7 +116,7 @@ Tensor* tensor_mul(const Tensor* a, const Tensor* b) {
         out_data[i] = a->data[idx_a] * b->data[idx_b];
     }
 
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim);
+    Tensor* out = create_tensor(out_data, out_shape, out_ndim, DEVICE_CPU);
     free(out_shape);
     return out;
 }
@@ -167,7 +167,7 @@ Tensor* tensor_div(const Tensor* a, const Tensor* b) {
     }
     int out_requires_grad = (a->requires_grad==1 && b->requires_grad==1)?1:0;
     // printf("out_requries_grad is ====> %d\n", out_requires_grad);
-    Tensor* out = create_tensor_autograd(out_data, out_shape, out_ndim, out_requires_grad);
+    Tensor* out = create_tensor_autograd(out_data, out_shape, out_ndim, out_requires_grad, DEVICE_CPU);
     free(out_shape);
     return out;
 }
@@ -313,7 +313,7 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
         }
     }
 
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim);
+    Tensor* out = create_tensor(out_data, out_shape, out_ndim, DEVICE_CPU);
     free(out_shape);
     free(out_batch_shape);
     return out;

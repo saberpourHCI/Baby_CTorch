@@ -41,8 +41,15 @@ Tensor* tensor_add(const Tensor* a, const Tensor* b) {
 
         out_data[i] = a->data[idx_a] + b->data[idx_b];
     }
+    
+    Tensor* out = create_tensor(out_data, out_shape, out_ndim, a->device);
+    // if(a->device==b->device){
+    //     Tensor* out = create_tensor(out_data, out_shape, out_ndim, a->device);
+    // }
+    // else {
+    //     printf("Both tensors should be on the same device");
+    // }
 
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim);
     free(out_shape);
     return out;
 }
@@ -85,7 +92,7 @@ Tensor* tensor_sub(const Tensor* a, const Tensor* b) {
         out_data[i] = a->data[idx_a] - b->data[idx_b];
     }
 
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim);
+    Tensor* out = create_tensor(out_data, out_shape, out_ndim, DEVICE_CPU);
     free(out_shape);
     return out;
 }

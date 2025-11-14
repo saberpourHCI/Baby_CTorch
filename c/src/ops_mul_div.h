@@ -17,4 +17,4 @@ Tensor* tensor_div_autograd(Tensor* A, Tensor* B);
 
 Tensor* tensor_matmul(const Tensor* A, const Tensor* B);
 
-#endif OPS_MUL_DIV
+#endif //OPS_MUL_DIV
