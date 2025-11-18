@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "cppbuild",
+      "label": "cl: build all",
+      "command": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.37.32822/bin/Hostx86/x86/cl.exe",
+      "args": [
+        "/Zi",
+        "/Od",
+        "/EHsc",
+        "/nologo",
+        "/Fe${workspaceFolder}/main.exe",
+        "${workspaceFolder}/src/main.c",
+        "${workspaceFolder}/src/tensor.c",
+        "${workspaceFolder}/src/ops_add_sub.c",
+        "${workspaceFolder}/src/ops_mul_div.c"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        "$msCompile"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "detail": "Build all C files with cl.exe"
+    }
+  ]
+}

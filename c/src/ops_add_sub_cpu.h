@@ -1,5 +1,5 @@
-#ifndef OPS_ADD_SUB
-#define OPS_ADD_SUB
+#ifndef OPS_ADD_SUB_CPU
+#define OPS_ADD_SUB_CPU
 
 #include "tensor.h"
 

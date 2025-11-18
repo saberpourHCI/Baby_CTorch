@@ -1,10 +1,27 @@
 #include "tensor.h"
+#include "ops_add_sub_cpu.h"
+#include "ops_add_sub_cuda.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
+#include <stddef.h>
 
 Tensor* tensor_add(const Tensor* a, const Tensor* b) {
+    return tensor_add_cpu(a, b);
+    
+    if (a->device == DEVICE_CPU && b->device == DEVICE_CPU) {
+        return tensor_add_cpu(a, b);
+    }
+    else if (a->device == DEVICE_CUDA && b->device == DEVICE_CUDA) {
+        return tensor_add_cuda(a, b);
+    }
+    else {
+        printf("tensor_add: both tensors should be on the same device");
+        return NULL;
+    }
+}
+
+Tensor* tensor_add_old(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
     if (!out_shape) {

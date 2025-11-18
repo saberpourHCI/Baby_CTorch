@@ -3,6 +3,10 @@
 #define TENSOR_H
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 
 
@@ -34,6 +38,7 @@ void free_tensor(Tensor* tensor);
 
 Tensor* create_tensor(float* data, const int* shape, int ndim, Device dev);
 
+
 Tensor* create_tensor_autograd(float* data, const int* shape, int ndim, int requires_grad, Device dev);
 
 const char* device_to_string(Device d);
@@ -55,5 +60,10 @@ Tensor* tensor_from_cuda(const Tensor* src);
 
 // void tensor_backward(Tensor* t, float* grad);
 // etc...
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // TENSOR_H

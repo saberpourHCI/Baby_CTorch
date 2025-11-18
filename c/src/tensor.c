@@ -1,20 +1,13 @@
-
+#include "cuda_utils.h"
+#include "tensor.h"
 #include <cuda_runtime.h>
-#include"tensor.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
 
-#define CUDA_CHECK(expr) do {                                      \
-    cudaError_t _err = (expr);                                    \
-    if (_err != cudaSuccess) {                                    \
-        fprintf(stderr, "CUDA error %s at %s:%d\n",               \
-                cudaGetErrorString(_err), __FILE__, __LINE__);    \
-        exit(1);                                                  \
-    }                                                             \
-} while (0)
+
 
 
 void free_tensor(Tensor* tensor) {
@@ -158,7 +151,7 @@ void tensor_backward(Tensor* t, float* grad) {
     if (grad != NULL) {
         printf("NOT-null================> t->grad is: %f, and grad is: %f\n", t->grad[0], grad[0]);
     } else {
-        printf("null================> t->grad is: %f, and grad is: %f\n", t->grad[0], grad);
+        printf("null================> t->grad is: %f, and grad is: %f\n", t->grad[0], *grad);
         for (int i = 0; i < t->size; i++)
             t->grad[i] = 1.0f;
     }
