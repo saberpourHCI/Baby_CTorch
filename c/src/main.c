@@ -657,6 +657,7 @@ int main() {
     Tensor* c = tensor_div_autograd(a, b);  // c = a * b
 
     Tensor* d = tensor_div_autograd(c, b);
+
     
     tensor_backward(d, NULL); // compute gradients
 
@@ -680,6 +681,13 @@ int main() {
     printf("d: ");
     for (int i = 0; i < d->size; i++) printf("%f ", d->data[i]);
     printf("\n");
+
+    Tensor* e = tensor_to_cuda(d);
+    Tensor* f = tensor_from_cuda(e);
+    printf("\n\ntensor e->data is: %f \n\n", f->data[0]);
+
+    printf("tensor e device is: ");
+    print_tensor_info(e);
 
     free_tensor(a);
     free_tensor(b);

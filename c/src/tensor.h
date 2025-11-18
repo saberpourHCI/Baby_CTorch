@@ -46,6 +46,10 @@ int* broadcast_shapes(const int* a_shape, int a_ndim, const int* b_shape, int b_
 
 void tensor_backward(Tensor* t, float* grad);
 
+Tensor* tensor_to_cuda(const Tensor* src);
+
+Tensor* tensor_from_cuda(const Tensor* src);
+
 
 //Tensor* tensor_create(float* data, int* shape, int ndim, int requires_grad);
 

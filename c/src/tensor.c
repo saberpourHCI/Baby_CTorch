@@ -1,9 +1,21 @@
 
+#include <cuda_runtime.h>
 #include"tensor.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+
+
+#define CUDA_CHECK(expr) do {                                      \
+    cudaError_t _err = (expr);                                    \
+    if (_err != cudaSuccess) {                                    \
+        fprintf(stderr, "CUDA error %s at %s:%d\n",               \
+                cudaGetErrorString(_err), __FILE__, __LINE__);    \
+        exit(1);                                                  \
+    }                                                             \
+} while (0)
+
 
 void free_tensor(Tensor* tensor) {
     if (!tensor) return;
@@ -160,3 +172,97 @@ void tensor_backward(Tensor* t, float* grad) {
     }
 }
 
+
+
+Tensor* tensor_to_cuda(const Tensor* src) {
+    if (!src) return NULL;
+
+    if (src->device == DEVICE_CUDA) {
+        fprintf(stderr, "tensor_to_cuda: tensor already on CUDA\n");
+        return NULL;
+    }
+
+
+    Tensor* dst = (Tensor*)malloc(sizeof(Tensor));
+    if (!dst) {
+        fprintf(stderr, "tensor_to_cuda: failed to allocate Tensor\n");
+        return NULL;
+    }
+
+    dst->ndim = src->ndim;
+    dst->size = src->size;
+    dst->requires_grad = src->requires_grad;
+    dst->parents = NULL;     // not copying graph here (for now)
+    dst->n_parents = 0;
+    dst->backward = NULL;
+    dst->device = DEVICE_CUDA;
+
+    // Copy shape and strides to host memory
+    dst->shape = (int*)malloc(dst->ndim * sizeof(int));
+    dst->strides = (int*)malloc(dst->ndim * sizeof(int));
+    if (!dst->shape || !dst->strides) {
+        fprintf(stderr, "tensor_to_cuda: failed to allocate shape/strides\n");
+        free(dst->shape);
+        free(dst->strides);
+        free(dst);
+        return NULL;
+    }
+    memcpy(dst->shape, src->shape, dst->ndim * sizeof(int));
+    memcpy(dst->strides, src->strides, dst->ndim * sizeof(int));
+
+    // Allocate device memory for data
+    CUDA_CHECK(cudaMalloc((void**)&dst->data, dst->size * sizeof(float)));
+
+    // Copy data from host (src->data) to device (dst->data)
+    CUDA_CHECK(cudaMemcpy(dst->data,
+                          src->data,
+                          dst->size * sizeof(float),
+                          cudaMemcpyHostToDevice));
+
+    // Not handling gradients on GPU yet
+    dst->grad = NULL;
+
+    return dst;
+}
+
+Tensor* tensor_from_cuda(const Tensor* src) {
+
+    if (!src) return NULL;
+
+    if (src->device == DEVICE_CPU) {
+        fprintf(stderr, "tensor_from_cuda: tensor already on CPU\n");
+        return NULL;
+    }
+    
+    Tensor* dst = (Tensor*)malloc(sizeof(Tensor));
+
+    dst->ndim = src->ndim;
+    dst->size = src->size;
+    dst->requires_grad = src->requires_grad;
+    dst->parents = NULL;     // not copying graph here (for now)
+    dst->n_parents = 0;
+    dst->backward = NULL;
+    dst->device = DEVICE_CPU;
+
+    // Copy shape and strides to host memory
+    dst->shape = (int*)malloc(dst->ndim * sizeof(int));
+    dst->strides = (int*)malloc(dst->ndim * sizeof(int));
+    // Instantiate the data pointer, when it is Null (0x0) the cudaMemcpy throws an error
+    dst->data = (float*)malloc(src->size * sizeof(float));
+    if (!dst->shape || !dst->strides || !dst->data) {
+        fprintf(stderr, "tensor_fom_cuda: failed to allocate shape/strides\n");
+        free(dst->shape);
+        free(dst->strides);
+        free(dst->data);
+        free(dst);
+        return NULL;
+    }
+    // printf("inside tensor_from_cuda, src->size is: %d\n", src->size);
+    // printf("inside tensor_from_cuda, dst->data is: %p\n", dst->data);
+    CUDA_CHECK(cudaMemcpy(dst->data, src->data, src->size * sizeof(float), cudaMemcpyDeviceToHost));
+
+    // Not handling gradients on GPU yet
+    dst->grad = NULL;
+
+    return dst;
+}
