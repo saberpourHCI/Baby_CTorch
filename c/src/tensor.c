@@ -267,11 +267,12 @@ Tensor* tensor_from_cuda(const Tensor* src) {
 
     dst->ndim = src->ndim;
     dst->size = src->size;
-    dst->requires_grad = src->requires_grad;
+    dst->requires_grad = NULL;//src->requires_grad;
     dst->parents = NULL;     // not copying graph here (for now)
     dst->n_parents = 0;
     dst->backward = NULL;
     dst->device = DEVICE_CPU;
+    dst->grad = NULL;
 
     // Copy shape and strides to host memory
     dst->shape = (int*)malloc(dst->ndim * sizeof(int));
@@ -286,16 +287,16 @@ Tensor* tensor_from_cuda(const Tensor* src) {
         free(dst);
         return NULL;
     }
+
     printf("\nq0: \n");
     print_tensor_info(src);
     CUDA_CHECK(cudaMemcpy(dst->data, src->data, src->size * sizeof(float), cudaMemcpyDeviceToHost));
-    CUDA_CHECK(cudaDeviceSynchronize());
+    // CUDA_CHECK(cudaDeviceSynchronize());
     printf("inside tensor_from_cuda, src->size is: %d\n", src->size);
     // printf("inside tensor_from_cuda, src->data is: %f\n", src->data[0]);
     printf("inside tensor_from_cuda, dst->data is: %f\n", dst->data[0]);
+
     
-    // Not handling gradients on GPU yet
-    dst->grad = NULL;
 
     return dst;
 }

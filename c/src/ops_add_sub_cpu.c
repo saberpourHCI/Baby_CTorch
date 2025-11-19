@@ -99,6 +99,101 @@ Tensor* tensor_sub_cpu(const Tensor* a, const Tensor* b) {
 
 
 
+
+
+
+void backward_add(Tensor* out) {
+    Tensor* A = out->parents[0];
+    Tensor* B = out->parents[1];
+
+    if (!A && !B) return;
+
+    int out_ndim = out->ndim;
+    int* out_shape = out->shape;
+    int out_size = out->size;
+
+    int a_ndim = A ? A->ndim : 0;
+    int b_ndim = B ? B->ndim : 0;
+
+    
+    if (A && A->requires_grad) {
+        if (!A->grad) {
+            A->grad = (float*)calloc(A->size, sizeof(float));
+            if (!A->grad) {
+                fprintf(stderr, "backward_add: failed to allocate A->grad\n");
+                return;
+            }
+        }
+    }
+    
+    if (B && B->requires_grad) {
+        if (!B->grad) {
+            B->grad = (float*)calloc(B->size, sizeof(float));
+            if (!B->grad) {
+                fprintf(stderr, "backward_add: failed to allocate B->grad\n");
+                return;
+            }
+        }
+    }
+
+    // Loop over all elements of out
+    for (int idx_out = 0; idx_out < out_size; ++idx_out) {
+        int rem = idx_out;
+        int idx_a = 0;
+        int idx_b = 0;
+
+        // Walk dimensions from last to first, like in your forward broadcasted add
+        for (int d = out_ndim - 1; d >= 0; --d) {
+            int coord = rem % out_shape[d];
+            rem /= out_shape[d];
+
+            // Map this dimension to A's dimensions
+            int a_dim = 1;
+            int a_stride = 0;
+            if (A) {
+                if (d >= out_ndim - a_ndim) {
+                    int a_axis = d - (out_ndim - a_ndim);
+                    a_dim = A->shape[a_axis];
+                    a_stride = A->strides[a_axis];
+                }
+            }
+
+            // Map this dimension to B's dimensions
+            int b_dim = 1;
+            int b_stride = 0;
+            if (B) {
+                if (d >= out_ndim - b_ndim) {
+                    int b_axis = d - (out_ndim - b_ndim);
+                    b_dim = B->shape[b_axis];
+                    b_stride = B->strides[b_axis];
+                }
+            }
+
+            // If a_dim == 1, that dimension was broadcast in A → same index along that dim
+            if (A && a_dim != 1) {
+                idx_a += coord * a_stride;
+            }
+
+            // Same for B
+            if (B && b_dim != 1) {
+                idx_b += coord * b_stride;
+            }
+        }
+
+        float g = out->grad ? out->grad[idx_out] : 0.0f;
+
+        if (A && A->requires_grad) {
+            A->grad[idx_a] += g;
+        }
+        if (B && B->requires_grad) {
+            B->grad[idx_b] += g;
+        }
+    }
+}
+
+
+
+
 void backward_add_cpu(Tensor* out) {
     Tensor* A = out->parents[0];
     Tensor* B = out->parents[1];

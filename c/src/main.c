@@ -683,6 +683,18 @@ int main() {
     printf("\n");
 
     Tensor* e = tensor_to_cuda(d);
+    Tensor* g = tensor_to_cuda(c);
+    Tensor* h = tensor_sub(e,c);
+
+    printf("=========================");
+    printf("tensor e device is: ");
+    print_tensor_info(e);
+    printf("tensor g device is: ");
+    print_tensor_info(g);
+    printf("tensor h device is: ");
+    print_tensor_info(h);
+    printf("=========================");
+
     Tensor* f = tensor_from_cuda(e);
     printf("\n\ntensor e->data is: %f \n\n", f->data[0]);
 

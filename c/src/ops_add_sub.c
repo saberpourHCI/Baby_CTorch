@@ -7,8 +7,6 @@
 #include <stddef.h>
 
 Tensor* tensor_add(const Tensor* a, const Tensor* b) {
-    return tensor_add_cpu(a, b);
-    
     if (a->device == DEVICE_CPU && b->device == DEVICE_CPU) {
         return tensor_add_cpu(a, b);
     }
@@ -21,6 +19,20 @@ Tensor* tensor_add(const Tensor* a, const Tensor* b) {
     }
 }
 
+
+Tensor* tensor_sub(const Tensor* a, const Tensor* b) {
+    if (a->device == DEVICE_CPU && b->device == DEVICE_CPU) {
+        return tensor_sub_cpu(a, b);
+    }
+    else if (a->device == DEVICE_CUDA && b->device == DEVICE_CUDA) {
+        return tensor_sub_cuda(a, b);
+    }
+    else {
+        printf("tensor_sub: both tensors should be on the same device");
+        return NULL;
+    }
+}
+/*
 Tensor* tensor_add_old(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
@@ -71,7 +83,7 @@ Tensor* tensor_add_old(const Tensor* a, const Tensor* b) {
     return out;
 }
 
-Tensor* tensor_sub(const Tensor* a, const Tensor* b) {
+Tensor* tensor_sub_old(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
     if (!out_shape) {
@@ -113,7 +125,7 @@ Tensor* tensor_sub(const Tensor* a, const Tensor* b) {
     free(out_shape);
     return out;
 }
-
+*/
 
 
 void backward_add(Tensor* out) {
