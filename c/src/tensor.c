@@ -57,12 +57,18 @@ Tensor* create_tensor(float* data, const int* shape, int ndim, Device dev) {
         stride *= shape[i];
     }
 
-    if(dev == DEVICE_CPU || dev == DEVICE_CUDA) {
+    if(dev == DEVICE_CUDA) {
         tensor->device = dev;
     }
     else {
         tensor->device = DEVICE_CPU;
     }
+    // if(dev == DEVICE_CPU || dev == DEVICE_CUDA) {
+    //     tensor->device = dev;
+    // }
+    // else {
+    //     tensor->device = DEVICE_CPU;
+    // }
     
 
     return tensor;
@@ -110,6 +116,36 @@ void print_tensor_info(const Tensor* t) {
         printf("%d%s", t->strides[i], i == t->ndim - 1 ? "" : ", ");
     }
     printf("]\n");
+
+    printf("Tensor data is:\n");
+    if (t->device == DEVICE_CPU) {
+        for (int i = 0; i < t->size; i++) {
+            printf("%f ", t->data[i]);
+        }
+        printf("\n");
+    } else if (t->device == DEVICE_CUDA) {
+        // Copy to cpu first
+        float* cpu_buf = (float*)malloc(t->size * sizeof(float));
+        if (!cpu_buf) {
+            fprintf(stderr, "Failed to allocate cpu_buf in print_tensor_data\n");
+            return;
+        }
+
+        CUDA_CHECK(cudaMemcpy(cpu_buf,
+                              t->data,
+                              t->size * sizeof(float),
+                              cudaMemcpyDeviceToHost));
+
+        for (int i = 0; i < t->size; i++) {
+            printf("%f ", cpu_buf[i]);
+        }
+        printf("\n");
+
+        free(cpu_buf);
+    } else {
+        printf("Unknown device\n");
+    }
+    printf("\n");
 
     printf("Device is: %s\n", device_to_string(t->device));
 }
@@ -250,10 +286,14 @@ Tensor* tensor_from_cuda(const Tensor* src) {
         free(dst);
         return NULL;
     }
-    // printf("inside tensor_from_cuda, src->size is: %d\n", src->size);
-    // printf("inside tensor_from_cuda, dst->data is: %p\n", dst->data);
+    printf("\nq0: \n");
+    print_tensor_info(src);
     CUDA_CHECK(cudaMemcpy(dst->data, src->data, src->size * sizeof(float), cudaMemcpyDeviceToHost));
-
+    CUDA_CHECK(cudaDeviceSynchronize());
+    printf("inside tensor_from_cuda, src->size is: %d\n", src->size);
+    // printf("inside tensor_from_cuda, src->data is: %f\n", src->data[0]);
+    printf("inside tensor_from_cuda, dst->data is: %f\n", dst->data[0]);
+    
     // Not handling gradients on GPU yet
     dst->grad = NULL;
 

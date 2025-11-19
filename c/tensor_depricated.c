@@ -1,13 +1,13 @@
-#include"src/tensor.h"
+/*#include"src/tensor.h"
 #include"src/ops_add_sub.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+#include <stdbool.h>*/
 
 
 /*typedef struct Tensor Tensor;*/
-typedef void (*BackwardFn)(Tensor*);
+/*typedef void (*BackwardFn)(Tensor*);*/
 
 /*struct Tensor {
     float* data;
@@ -124,7 +124,7 @@ typedef void (*BackwardFn)(Tensor*);
 }*/
 
 
-void backward_mul(Tensor* out) {
+/*void backward_mul(Tensor* out) {
 
     Tensor* A = out->parents[0];
     Tensor* B = out->parents[1];
@@ -159,10 +159,10 @@ void backward_mul(Tensor* out) {
         if (A->grad) A->grad[idx_a] += B->data[idx_b] * g;
         if (B->grad) B->grad[idx_b] += A->data[idx_a] * g;
     }
-}
+}*/
 
 
-void backward_div(Tensor* out) {
+/*void backward_div(Tensor* out) {
 
     Tensor* A = out->parents[0];
     Tensor* B = out->parents[1];
@@ -196,7 +196,7 @@ void backward_div(Tensor* out) {
         if (B->grad) B->grad[idx_b] += -(A->data[idx_a]/(b* b)) * g;
         printf("A->grad[%d] is %f \n", idx_a, A->grad[idx_a]);
     }
-}
+}*/
 
 
 /*void print_tensor_info(const Tensor* t) {
@@ -329,7 +329,7 @@ void backward_div(Tensor* out) {
     return out;
 }*/
 
-Tensor* tensor_mul(const Tensor* a, const Tensor* b) {
+/*Tensor* tensor_mul(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
     if (!out_shape) {
@@ -370,9 +370,9 @@ Tensor* tensor_mul(const Tensor* a, const Tensor* b) {
     Tensor* out = create_tensor(out_data, out_shape, out_ndim);
     free(out_shape);
     return out;
-}
+}*/
 
-Tensor* tensor_div(const Tensor* a, const Tensor* b) {
+/*Tensor* tensor_div(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
     if (!out_shape) {
@@ -421,7 +421,7 @@ Tensor* tensor_div(const Tensor* a, const Tensor* b) {
     Tensor* out = create_tensor_autograd(out_data, out_shape, out_ndim, out_requires_grad);
     free(out_shape);
     return out;
-}
+}*/
 
 
 
@@ -461,7 +461,7 @@ Tensor* tensor_div(const Tensor* a, const Tensor* b) {
     return out;
 }*/
 
-Tensor* tensor_mul_autograd(Tensor* A, Tensor* B){
+/*Tensor* tensor_mul_autograd(Tensor* A, Tensor* B){
     Tensor* out = tensor_mul(A, B);
     if (!out) return NULL;
 
@@ -477,9 +477,9 @@ Tensor* tensor_mul_autograd(Tensor* A, Tensor* B){
     }
 
     return out;
-}
+}*/
 
-Tensor* tensor_div_autograd(Tensor* A, Tensor* B){
+/*Tensor* tensor_div_autograd(Tensor* A, Tensor* B){
     Tensor* out = tensor_div(A, B);
     if (!out) return NULL;
 
@@ -497,12 +497,12 @@ Tensor* tensor_div_autograd(Tensor* A, Tensor* B){
     }
 
     return out;
-}
+}*/
 
 
 
 // Uses broadcasting for the last 2 dimensions and accounts for the batch multiplicartion
-Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
+/*Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
     if (A->ndim < 2 || B->ndim < 2) {
         fprintf(stderr, "Error: Matmul requires ndim >= 2\n");
         return NULL;
@@ -608,7 +608,7 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
     free(out_shape);
     free(out_batch_shape);
     return out;
-}
+}*/
 
 
 /*void tensor_backward(Tensor* t, float* grad) {
@@ -637,7 +637,7 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
 
 
 
-int main() {
+/*int main() {
     float data1[3] = {1,2,3};
     int shape1[1] = {3};
     int ndim1 = 1;
@@ -684,7 +684,7 @@ int main() {
     free_tensor(c);
     free_tensor(d);
     return 0;
-}
+}*/
 
 
 
