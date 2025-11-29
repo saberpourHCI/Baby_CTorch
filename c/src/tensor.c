@@ -17,6 +17,65 @@ void free_tensor(Tensor* tensor) {
     free(tensor);
 }
 
+// Tensor* create_tensor(float* data, const int* shape, int ndim, Device dev) {
+//     if (data == NULL || shape == NULL || ndim <= 0) {
+//         fprintf(stderr, "Invalid input parameters\n");
+//         return NULL;
+//     }
+
+//     Tensor* tensor = (Tensor*)malloc(sizeof(Tensor));
+//     if (tensor == NULL) {
+//         fprintf(stderr, "Failed allocating memory for tensor\n");
+//         return NULL;
+//     }
+
+//     tensor->data = data;
+//     tensor->shape = (int*)malloc(ndim * sizeof(int));
+//     if (tensor->shape == NULL) {
+//         fprintf(stderr, "Memory allocation failed\n");
+//         free(tensor);
+//         return NULL;
+//     }
+//     memcpy(tensor->shape, shape, ndim * sizeof(int));
+//     tensor->ndim = ndim;
+
+//     tensor->size = 1;
+//     for (int i = 0; i < ndim; i++) {
+//         tensor->size *= shape[i];
+//     }
+
+//     tensor->strides = (int*)malloc(ndim * sizeof(int));
+//     if (tensor->strides == NULL) {
+//         fprintf(stderr, "Memory allocation failed\n");
+//         free(tensor->shape);
+//         free(tensor);
+//         return NULL;
+//     }
+//     int stride = 1;
+//     for (int i = ndim - 1; i >= 0; i--) {
+//         tensor->strides[i] = stride;
+//         stride *= shape[i];
+//     }
+
+//     if(dev == DEVICE_CUDA) {
+//         tensor->device = dev;
+//     }
+//     else {
+//         tensor->device = DEVICE_CPU;
+//     }
+//     // if(dev == DEVICE_CPU || dev == DEVICE_CUDA) {
+//     //     tensor->device = dev;
+//     // }
+//     // else {
+//     //     tensor->device = DEVICE_CPU;
+//     // }
+    
+
+//     return tensor;
+// }
+
+
+
 Tensor* create_tensor(float* data, const int* shape, int ndim, Device dev) {
     if (data == NULL || shape == NULL || ndim <= 0) {
         fprintf(stderr, "Invalid input parameters\n");
@@ -29,7 +88,7 @@ Tensor* create_tensor(float* data, const int* shape, int ndim, Device dev) {
         return NULL;
     }
 
-    tensor->data = data;
+    
     tensor->shape = (int*)malloc(ndim * sizeof(int));
     if (tensor->shape == NULL) {
         fprintf(stderr, "Memory allocation failed\n");
@@ -59,9 +118,18 @@ Tensor* create_tensor(float* data, const int* shape, int ndim, Device dev) {
 
     if(dev == DEVICE_CUDA) {
         tensor->device = dev;
+        // Allocate device memory for data
+        CUDA_CHECK(cudaMalloc((void**)&tensor->data, tensor->size * sizeof(float)));
+
+        // Copy data from host (src->data) to device (dst->data)
+        CUDA_CHECK(cudaMemcpy(tensor->data,
+                            data,
+                            tensor->size * sizeof(float),
+                            cudaMemcpyHostToDevice));
     }
     else {
         tensor->device = DEVICE_CPU;
+        tensor->data = data;
     }
     // if(dev == DEVICE_CPU || dev == DEVICE_CUDA) {
     //     tensor->device = dev;
@@ -73,6 +141,9 @@ Tensor* create_tensor(float* data, const int* shape, int ndim, Device dev) {
 
     return tensor;
 }
+
+
+
 
 Tensor* create_tensor_autograd(float* data, const int* shape, int ndim, int requires_grad, Device dev) {
     Tensor* t = create_tensor(data, shape, ndim, dev);
@@ -130,6 +201,12 @@ void print_tensor_info(const Tensor* t) {
             fprintf(stderr, "Failed to allocate cpu_buf in print_tensor_data\n");
             return;
         }
+        if (!t->data || !t->size) {
+            fprintf(stderr, "Failed to allocate t->data or t->size in print_tensor_data\n");
+            return;
+        }
+
+        
 
         CUDA_CHECK(cudaMemcpy(cpu_buf,
                               t->data,
@@ -267,7 +344,7 @@ Tensor* tensor_from_cuda(const Tensor* src) {
 
     dst->ndim = src->ndim;
     dst->size = src->size;
-    dst->requires_grad = NULL;//src->requires_grad;
+    dst->requires_grad = 0;//src->requires_grad;
     dst->parents = NULL;     // not copying graph here (for now)
     dst->n_parents = 0;
     dst->backward = NULL;

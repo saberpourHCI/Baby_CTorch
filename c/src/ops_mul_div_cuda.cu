@@ -9,148 +9,7 @@
 
 
 
-/*
-
-Tensor* tensor_add_cpu(const Tensor* a, const Tensor* b) {
-    int out_ndim;
-    int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
-    if (!out_shape) {
-        fprintf(stderr, "Error: Incompatible shapes for addition\n");
-        return NULL;
-    }
-
-    int out_size = compute_size(out_shape, out_ndim);
-    float* out_data = (float*)malloc(out_size * sizeof(float));
-    if (!out_data) {
-        free(out_shape);
-        fprintf(stderr, "Error: Memory allocation failed\n");
-        return NULL;
-    }
-
-    // Iterate through all elements using linear indexing
-    for (int i = 0; i < out_size; i++) {
-        // Compute multi-dimensional index
-        int idx_a = 0, idx_b = 0;
-        int rem = i;
-        for (int d = out_ndim - 1; d >= 0; d--) {
-            int coord = rem % out_shape[d];
-            rem /= out_shape[d];
-
-            int a_dim = (d >= out_ndim - a->ndim) ? a->shape[d - (out_ndim - a->ndim)] : 1;
-            int b_dim = (d >= out_ndim - b->ndim) ? b->shape[d - (out_ndim - b->ndim)] : 1;
-
-            int a_stride = (d >= out_ndim - a->ndim) ? a->strides[d - (out_ndim - a->ndim)] : 0;
-            int b_stride = (d >= out_ndim - b->ndim) ? b->strides[d - (out_ndim - b->ndim)] : 0;
-
-            if (a_dim != 1) idx_a += coord * a_stride;
-            if (b_dim != 1) idx_b += coord * b_stride;
-        }
-
-        out_data[i] = a->data[idx_a] + b->data[idx_b];
-    }
-    
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim, a->device);
-    // if(a->device==b->device){
-    //     Tensor* out = create_tensor(out_data, out_shape, out_ndim, a->device);
-    // }
-    // else {
-    //     printf("Both tensors should be on the same device");
-    // }
-
-    free(out_shape);
-    return out;
-}
-
-*/
-
-/*
-
-__global__ void tensor_add_broadcast_kernel(
-    const float* __restrict__ a,
-    const float* __restrict__ b,
-    float* __restrict__ out,
-    const int* __restrict__ out_shape, int out_ndim,
-    const int* __restrict__ a_shape,  const int* __restrict__ a_strides, int a_ndim,
-    const int* __restrict__ b_shape,  const int* __restrict__ b_strides, int b_ndim,
-    int out_size
-) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= out_size) return;
-
-    int idx_a = 0;
-    int idx_b = 0;
-    int rem = i;
-
-    // This mirrors your CPU broadcasting logic:
-    // walk from last dimension to first, compute coord in out,
-    // map to A/B indices using their shapes/strides and broadcasting rules.
-    for (int d = out_ndim - 1; d >= 0; --d) {
-        int coord = rem % out_shape[d];
-        rem /= out_shape[d];
-
-        // Map to A's dim/stride
-        int a_dim = 1;
-        int a_str = 0;
-        int a_offset = d - (out_ndim - a_ndim);
-        if (a_offset >= 0) {
-            a_dim = a_shape[a_offset];
-            a_str = a_strides[a_offset];
-        }
-
-        // Map to B's dim/stride
-        int b_dim = 1;
-        int b_str = 0;
-        int b_offset = d - (out_ndim - b_ndim);
-        if (b_offset >= 0) {
-            b_dim = b_shape[b_offset];
-            b_str = b_strides[b_offset];
-        }
-
-        if (a_dim != 1) {
-            idx_a += coord * a_str;
-        }
-        if (b_dim != 1) {
-            idx_b += coord * b_str;
-        }
-    }
-
-    out[i] = a[idx_a] + b[idx_b];
-}
-
-
-*/
-
-__global__ void tensor_add_broadcast_kernel(const float* a, 
-    const float* b, 
-    float* c, 
-    const int a_ndim, const int b_ndim, const int c_ndim,
-    const int* a_shape, const int* b_shape, const int* c_shape,
-    const int* a_strides, const int* b_strides,
-    int size) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if(idx>=size) {
-        return;
-    }
-    int idx_a = 0, idx_b = 0;
-    int rem = idx;
-    for (int d = c_ndim - 1; d >= 0; d--) {
-            int coord = rem % c_shape[d];
-            rem /= c_shape[d];
-
-            int a_dim = (d >= c_ndim - a_ndim) ? a_shape[d - (c_ndim - a_ndim)] : 1;
-            int b_dim = (d >= c_ndim - b_ndim) ? b_shape[d - (c_ndim - b_ndim)] : 1;
-
-            int a_stride = (d >= c_ndim - a_ndim) ? a_strides[d - (c_ndim - a_ndim)] : 0;
-            int b_stride = (d >= c_ndim - b_ndim) ? b_strides[d - (c_ndim - b_ndim)] : 0;
-
-            if (a_dim != 1) idx_a += coord * a_stride;
-            if (b_dim != 1) idx_b += coord * b_stride;
-        }
-
-    c[idx] = a[idx_a] + b[idx_b];
-}
-
-__global__ void tensor_add_kernel(const float* a, const float* b, float* c, int size) {
+__global__ void tensor_mul_kernel(const float* a, const float* b, float* c, int size) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if(idx < size) {
         c[idx] = a[idx] + b[idx];
@@ -233,7 +92,7 @@ __global__ void backward_sub_broadcast_kernel(
 
 
 extern "C"
-Tensor* tensor_add_cuda(const Tensor* A, const Tensor* B) {
+Tensor* tensor_mul_cuda(const Tensor* A, const Tensor* B) {
     if (!A || !B) {
         fprintf(stderr, "tensor_add_cuda: NULL input\n");
         return NULL;
@@ -256,7 +115,7 @@ Tensor* tensor_add_cuda(const Tensor* A, const Tensor* B) {
         return NULL;
     }
 
-    // out->ndim = A->ndim;
+    out->ndim = A->ndim;
     out->size = A->size;
     out->requires_grad = 0;     // autograd later
     out->parents = NULL;
@@ -274,53 +133,23 @@ Tensor* tensor_add_cuda(const Tensor* A, const Tensor* B) {
         free(out);
         return NULL;
     }
-    out->shape = broadcast_shapes(A->shape, A->ndim, B->shape, B->ndim, &out->ndim);
-    out->size = compute_size(out->shape, out->ndim);
-
-    // memcpy(out->shape, A->shape, out->ndim * sizeof(int));
+    memcpy(out->shape, A->shape, out->ndim * sizeof(int));
     memcpy(out->strides, A->strides, out->ndim * sizeof(int));
 
     // Allocate GPU memory for output data
     CUDA_CHECK(cudaMalloc((void**)&out->data, out->size * sizeof(float)));
     out->grad = NULL;  // we’ll add GPU grads later
 
-    int* a_shape_device;
-    int* b_shape_device; 
-    int* out_shape_device;
-    int* a_strides_device;
-    int* b_strides_device;
-
-
-
     // Launch kernel
     int blockSize = 256;
     int numBlocks = (out->size + blockSize - 1) / blockSize;
 
-/*
-__global__ void tensor_add_broadcast_kernel(const float* a, 
-    const float* b, 
-    float* c, 
-    const int a_ndim, const int b_ndim, const int c_ndim,
-    const int* a_shape, const int* b_shape, const int* c_shape,
-    const int* a_strides, const int* b_strides,
-    int size)
-*/
-    tensor_add_broadcast_kernel<<<numBlocks, blockSize>>>(A->data, 
-    B->data, 
-    out->data, 
-    A->ndim, B->ndim, out->ndim,
-    a_shape_device, b_shape_device, out_shape_device,
-    a_strides_device,b_strides_device,
-    out->size);
-
-    tensor_add_kernel<<<numBlocks, blockSize>>>(A->data, B->data, out->data, out->size);
+    tensor_mul_kernel<<<numBlocks, blockSize>>>(A->data, B->data, out->data, out->size);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
 
     return out;
 }
-
-
 
 
 extern "C"

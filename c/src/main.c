@@ -652,8 +652,9 @@ int main() {
     Tensor* a = create_tensor_autograd(data1, shape1, ndim1, 1, DEVICE_CPU);
     Tensor* b = create_tensor_autograd(data2, shape2, ndim2, 1, DEVICE_CPU);
     printf("Here is the tensor info for A printed: \n");
+    // a = tensor_to_cuda(a);
     print_tensor_info(a);
-
+    printf("p0- ");
     Tensor* c = tensor_div_autograd(a, b);  // c = a * b
     printf("p1- ");
     Tensor* d = tensor_div_autograd(c, b);

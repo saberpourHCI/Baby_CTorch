@@ -1,6 +1,4 @@
 #include "tensor.h"
-#include "ops_mul_div_cpu.h"
-#include "ops_mul_div_cuda.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -79,20 +77,7 @@ void backward_div(Tensor* out) {
     }
 }
 
-Tensor* tensor_mul(const Tensor* a, const Tensor* b) {
-    if (a->device == DEVICE_CPU && b->device == DEVICE_CPU) {
-        return tensor_mul_cpu(a, b);
-    }
-    else if (a->device == DEVICE_CUDA && b->device == DEVICE_CUDA) {
-        return tensor_mul_cuda(a, b);
-    }
-    else {
-        printf("tensor_mul: both tensors should be on the same device");
-        return NULL;
-    }
-}
-
-Tensor* tensor_mul(const Tensor* a, const Tensor* b) {
+Tensor* tensor_mul_cpu(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
     if (!out_shape) {
