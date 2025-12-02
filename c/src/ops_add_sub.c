@@ -1,4 +1,5 @@
 #include "tensor.h"
+#include "cuda_utils.h"
 #include "ops_add_sub_cpu.h"
 #include "ops_add_sub_cuda.h"
 #include <stdlib.h>
@@ -128,41 +129,54 @@ Tensor* tensor_sub_old(const Tensor* a, const Tensor* b) {
 */
 
 
-void backward_add(Tensor* out) {
-    Tensor* A = out->parents[0];
-    Tensor* B = out->parents[1];
+// void backward_add(Tensor* out) {
+//     Tensor* A = out->parents[0];
+//     Tensor* B = out->parents[1];
 
-    for (int i = 0; i < A->size; i++)
-        A->grad[i] += out->grad[i];
+//     for (int i = 0; i < A->size; i++)
+//         A->grad[i] += out->grad[i];
 
-    for (int i = 0; i < B->size; i++)
-        B->grad[i] += out->grad[i];
-}
+//     for (int i = 0; i < B->size; i++)
+//         B->grad[i] += out->grad[i];
+// }
 
-void backward_sub(Tensor* out) {
-    Tensor* A = out->parents[0];
-    Tensor* B = out->parents[1];
+// void backward_sub(Tensor* out) {
+//     Tensor* A = out->parents[0];
+//     Tensor* B = out->parents[1];
 
-    for (int i = 0; i < A->size; i++)
-        A->grad[i] += out->grad[i];
+//     for (int i = 0; i < A->size; i++)
+//         A->grad[i] += out->grad[i];
 
-    for (int i = 0; i < B->size; i++)
-        B->grad[i] -= out->grad[i];
-}
+//     for (int i = 0; i < B->size; i++)
+//         B->grad[i] -= out->grad[i];
+// }
 
 
 Tensor* tensor_add_autograd(Tensor* A, Tensor* B) {
     Tensor* out = tensor_add(A, B);
     if (!out) return NULL;
 
-    if (A->requires_grad || B->requires_grad) {
-        out->requires_grad = 1;
+    if (out->requires_grad) {
+        // out->requires_grad = 1;
         out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
         out->parents[0] = A;
         out->parents[1] = B;
         out->n_parents = 2;
-        out->backward = backward_add;
-        out->grad = (float*)calloc(out->size, sizeof(float));
+        if(out->device == DEVICE_CPU) {
+            out->backward = backward_add_cpu;
+            // out->grad = (float*)calloc(out->size, sizeof(float));
+        } else if(out->device == DEVICE_CUDA) {
+            out->backward = backward_add_cuda;
+            printf("\n\nbackward cuda is assigned!!!\n\n");
+            // CUDA_CHECK(cudaMalloc((void**)&out->grad, out->size * sizeof(float)));
+            
+            // CUDA_CHECK(cudaMemset(out->grad, 0, out->size * sizeof(float)));
+        } else {
+            printf("inside tensor_add_autograd, the device is unknown!  \n");
+            return NULL;
+        }
+
+        
     }
 
     return out;
@@ -172,16 +186,47 @@ Tensor* tensor_sub_autograd(Tensor* A, Tensor* B) {
     Tensor* out = tensor_sub(A, B);
     if (!out) return NULL;
 
-    if (A->requires_grad || B->requires_grad) {
-        out->requires_grad = 1;
+    if (out->requires_grad) {
+        // out->requires_grad = 1;
         out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
         out->parents[0] = A;
         out->parents[1] = B;
         out->n_parents = 2;
-        out->backward = backward_sub;
-        out->grad = (float*)calloc(out->size, sizeof(float));
+        if(out->device == DEVICE_CPU) {
+            out->backward = backward_sub_cpu;
+            // out->grad = (float*)calloc(out->size, sizeof(float));
+        } else if(out->device == DEVICE_CUDA) {
+            out->backward = backward_sub_cuda;
+            printf("\n\n'tensor_sub_autograd' backward cuda is assigned!!!\n\n");
+            // CUDA_CHECK(cudaMalloc((void**)&out->grad, out->size * sizeof(float)));
+            
+            // CUDA_CHECK(cudaMemset(out->grad, 0, out->size * sizeof(float)));
+        } else {
+            printf("inside tensor_sub_autograd, the device is unknown!  \n");
+            return NULL;
+        }
+
+        
     }
 
     return out;
 }
+
+
+// Tensor* tensor_sub_autograd(Tensor* A, Tensor* B) {
+//     Tensor* out = tensor_sub(A, B);
+//     if (!out) return NULL;
+
+//     if (A->requires_grad || B->requires_grad) {
+//         out->requires_grad = 1;
+//         out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
+//         out->parents[0] = A;
+//         out->parents[1] = B;
+//         out->n_parents = 2;
+//         out->backward = backward_sub;
+//         out->grad = (float*)calloc(out->size, sizeof(float));
+//     }
+
+//     return out;
+// }
 

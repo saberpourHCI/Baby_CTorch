@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-void backward_mul(Tensor* out) {
+void backward_mul_cpu(Tensor* out) {
 
     Tensor* A = out->parents[0];
     Tensor* B = out->parents[1];
@@ -41,7 +41,7 @@ void backward_mul(Tensor* out) {
 }
 
 
-void backward_div(Tensor* out) {
+void backward_div_cpu(Tensor* out) {
 
     Tensor* A = out->parents[0];
     Tensor* B = out->parents[1];
@@ -76,6 +76,8 @@ void backward_div(Tensor* out) {
         printf("A->grad[%d] is %f \n", idx_a, A->grad[idx_a]);
     }
 }
+
+
 
 Tensor* tensor_mul_cpu(const Tensor* a, const Tensor* b) {
     int out_ndim;
@@ -115,12 +117,19 @@ Tensor* tensor_mul_cpu(const Tensor* a, const Tensor* b) {
         out_data[i] = a->data[idx_a] * b->data[idx_b];
     }
 
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim, DEVICE_CPU);
+    int requires_grad;
+    if (a->requires_grad || b->requires_grad) {
+        requires_grad = 1;
+    }
+    else {
+        requires_grad = 0;
+    }
+    Tensor* out = create_tensor(out_data, out_shape, out_ndim, requires_grad, DEVICE_CPU);
     free(out_shape);
     return out;
 }
 
-Tensor* tensor_div(const Tensor* a, const Tensor* b) {
+Tensor* tensor_div_cpu(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
     if (!out_shape) {
@@ -172,43 +181,43 @@ Tensor* tensor_div(const Tensor* a, const Tensor* b) {
 }
 
 
-Tensor* tensor_mul_autograd(Tensor* A, Tensor* B){
-    Tensor* out = tensor_mul(A, B);
-    if (!out) return NULL;
+// Tensor* tensor_mul_autograd(Tensor* A, Tensor* B){
+//     Tensor* out = tensor_mul(A, B);
+//     if (!out) return NULL;
 
-    if (A->requires_grad || B->requires_grad) {
-        out->requires_grad = 1;
-        out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
-        out->parents[0] = A;
-        out->parents[1] = B;
-        out->n_parents = 2;
-        out->grad = (float*)calloc(out->size, sizeof(float));
-        out->backward = backward_mul;
+//     if (A->requires_grad || B->requires_grad) {
+//         out->requires_grad = 1;
+//         out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
+//         out->parents[0] = A;
+//         out->parents[1] = B;
+//         out->n_parents = 2;
+//         out->grad = (float*)calloc(out->size, sizeof(float));
+//         out->backward = backward_mul;
         
-    }
+//     }
 
-    return out;
-}
+//     return out;
+// }
 
-Tensor* tensor_div_autograd(Tensor* A, Tensor* B){
-    Tensor* out = tensor_div(A, B);
-    if (!out) return NULL;
+// Tensor* tensor_div_autograd(Tensor* A, Tensor* B){
+//     Tensor* out = tensor_div(A, B);
+//     if (!out) return NULL;
 
-    if (A->requires_grad || B->requires_grad) {
-        out->requires_grad = 1;
-        out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
-        out->parents[0] = A;
-        out->parents[1] = B;
-        out->n_parents = 2;
-        out->grad = (float*)calloc(out->size, sizeof(float));
-        out->backward = backward_div;
-        printf("p1: ----> B->grad[0] = %f\n", B->grad[0]);
+//     if (A->requires_grad || B->requires_grad) {
+//         out->requires_grad = 1;
+//         out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
+//         out->parents[0] = A;
+//         out->parents[1] = B;
+//         out->n_parents = 2;
+//         out->grad = (float*)calloc(out->size, sizeof(float));
+//         out->backward = backward_div;
+//         printf("p1: ----> B->grad[0] = %f\n", B->grad[0]);
         
         
-    }
+//     }
 
-    return out;
-}
+//     return out;
+// }
 
 Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
     if (A->ndim < 2 || B->ndim < 2) {
@@ -311,8 +320,14 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
             }
         }
     }
-
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim, DEVICE_CPU);
+    int requires_grad;
+    if (A->requires_grad || B->requires_grad) {
+        requires_grad = 1;
+    }
+    else {
+        requires_grad = 0;
+    }
+    Tensor* out = create_tensor(out_data, out_shape, out_ndim, requires_grad, DEVICE_CPU);
     free(out_shape);
     free(out_batch_shape);
     return out;

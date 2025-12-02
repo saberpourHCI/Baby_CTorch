@@ -10,6 +10,8 @@ extern "C" {
 #endif
 
 // Tensor* tensor_add_cuda(const Tensor* a, const Tensor* b);
+float* cudaMemSetFloat(float* p, int size, float val);
+
 Tensor* tensor_add_cuda(const Tensor* A, const Tensor* B);
 
 Tensor* tensor_sub_cuda(const Tensor* a, const Tensor* b);

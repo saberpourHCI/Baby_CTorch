@@ -5,15 +5,15 @@
 
 Tensor* tensor_mul_cpu(const Tensor* a, const Tensor* b);
 
-Tensor* tensor_sub_cpu(const Tensor* a, const Tensor* b);
+Tensor* tensor_div_cpu(const Tensor* a, const Tensor* b);
 
-void backward_add_cpu(Tensor* out);
+void backward_mul_cpu(Tensor* out);
 
-void backward_sub_cpu(Tensor* out);
+void backward_div_cpu(Tensor* out);
 
 
-Tensor* tensor_add_autograd_cpu(Tensor* A, Tensor* B);
+Tensor* tensor_mul_autograd_cpu(Tensor* A, Tensor* B);
 
-Tensor* tensor_sub_autograd_cpu(Tensor* A, Tensor* B);
+Tensor* tensor_div_autograd_cpu(Tensor* A, Tensor* B);
 
 #endif

@@ -24,6 +24,7 @@ typedef struct Tensor {
     int ndim;
     int size;
     int requires_grad;
+    // int grad_initialized;
     // ... whatever else you already have
     struct Tensor** parents;
     int n_parents;
@@ -36,7 +37,9 @@ typedef struct Tensor {
 // Function declarations (prototypes)
 void free_tensor(Tensor* tensor);
 
-Tensor* create_tensor(float* data, const int* shape, int ndim, Device dev);
+Tensor* create_empty_tensor(const int* shape, int ndim, int requires_grad, Device dev);
+
+Tensor* create_tensor(float* data, const int* shape, int ndim, int requires_grad, Device dev);
 
 
 Tensor* create_tensor_autograd(float* data, const int* shape, int ndim, int requires_grad, Device dev);

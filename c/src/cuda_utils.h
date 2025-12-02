@@ -16,5 +16,7 @@
     }                                                             \
 } while (0)
 
+void where_is_float_pointer(float* ptr);
+void where_is_int_pointer(int* ptr);
 
 #endif

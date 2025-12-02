@@ -11,6 +11,7 @@ Tensor* tensor_add_cpu(const Tensor* a, const Tensor* b) {
         fprintf(stderr, "Error: Incompatible shapes for addition\n");
         return NULL;
     }
+    // printf("\n\n\n\n\n\n\n\n\n\n\n\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n%d\n\n\n\n", out_ndim);
 
     int out_size = compute_size(out_shape, out_ndim);
     float* out_data = (float*)malloc(out_size * sizeof(float));
@@ -42,7 +43,16 @@ Tensor* tensor_add_cpu(const Tensor* a, const Tensor* b) {
         out_data[i] = a->data[idx_a] + b->data[idx_b];
     }
     
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim, a->device);
+    
+    int requires_grad;
+    if (a->requires_grad || b->requires_grad) {
+        requires_grad = 1;
+    }
+    else {
+        requires_grad = 0;
+    }
+
+    Tensor* out = create_tensor(out_data, out_shape, out_ndim, requires_grad, a->device);
     // if(a->device==b->device){
     //     Tensor* out = create_tensor(out_data, out_shape, out_ndim, a->device);
     // }
@@ -92,7 +102,14 @@ Tensor* tensor_sub_cpu(const Tensor* a, const Tensor* b) {
         out_data[i] = a->data[idx_a] - b->data[idx_b];
     }
 
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim, DEVICE_CPU);
+    int requires_grad;
+    if (a->requires_grad || b->requires_grad) {
+        requires_grad = 1;
+    }
+    else {
+        requires_grad = 0;
+    }
+    Tensor* out = create_tensor(out_data, out_shape, out_ndim, requires_grad, DEVICE_CPU);
     free(out_shape);
     return out;
 }
@@ -118,21 +135,23 @@ void backward_add_cpu(Tensor* out) {
     
     if (A && A->requires_grad) {
         if (!A->grad) {
-            A->grad = (float*)calloc(A->size, sizeof(float));
-            if (!A->grad) {
-                fprintf(stderr, "backward_add: failed to allocate A->grad\n");
-                return;
-            }
+            printf("ERROR: 'backward_add_cpu' tensor 'A' requires grad, but grad pointer not allocated\n");
+            // A->grad = (float*)calloc(A->size, sizeof(float));
+            // if (!A->grad) {
+            //     fprintf(stderr, "backward_add: failed to allocate A->grad\n");
+            //     return;
+            // }
         }
     }
 
     if (B && B->requires_grad) {
         if (!B->grad) {
-            B->grad = (float*)calloc(B->size, sizeof(float));
-            if (!B->grad) {
-                fprintf(stderr, "backward_add: failed to allocate B->grad\n");
-                return;
-            }
+            printf("ERROR: 'backward_add_cpu' tensor 'B' requires grad, but grad pointer not allocated\n");
+            // B->grad = (float*)calloc(B->size, sizeof(float));
+            // if (!B->grad) {
+            //     fprintf(stderr, "backward_add: failed to allocate B->grad\n");
+            //     return;
+            // }
         }
     }
 
@@ -210,21 +229,23 @@ void backward_sub_cpu(Tensor* out) {
     
     if (A && A->requires_grad) {
         if (!A->grad) {
-            A->grad = (float*)calloc(A->size, sizeof(float));
-            if (!A->grad) {
-                fprintf(stderr, "backward_add: failed to allocate A->grad\n");
-                return;
-            }
+            printf("ERROR: 'backward_sub_cpu' tensor 'A' requires grad, but grad pointer not allocated\n");
+            // A->grad = (float*)calloc(A->size, sizeof(float));
+            // if (!A->grad) {
+            //     fprintf(stderr, "backward_add: failed to allocate A->grad\n");
+            //     return;
+            // }
         }
     }
 
     if (B && B->requires_grad) {
         if (!B->grad) {
-            B->grad = (float*)calloc(B->size, sizeof(float));
-            if (!B->grad) {
-                fprintf(stderr, "backward_add: failed to allocate B->grad\n");
-                return;
-            }
+            printf("ERROR: 'backward_sub_cpu' tensor 'B' requires grad, but grad pointer not allocated\n");
+            // B->grad = (float*)calloc(B->size, sizeof(float));
+            // if (!B->grad) {
+            //     fprintf(stderr, "backward_add: failed to allocate B->grad\n");
+            //     return;
+            // }
         }
     }
 
@@ -312,8 +333,7 @@ Tensor* tensor_add_autograd_cpu(Tensor* A, Tensor* B) {
     Tensor* out = tensor_add_cpu(A, B);
     if (!out) return NULL;
 
-    if (A->requires_grad || B->requires_grad) {
-        out->requires_grad = 1;
+    if (out->requires_grad) {
         out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
         out->parents[0] = A;
         out->parents[1] = B;
@@ -329,14 +349,13 @@ Tensor* tensor_sub_autograd_cpu(Tensor* A, Tensor* B) {
     Tensor* out = tensor_sub_cpu(A, B);
     if (!out) return NULL;
 
-    if (A->requires_grad || B->requires_grad) {
-        out->requires_grad = 1;
+    if (out->requires_grad) {
         out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
         out->parents[0] = A;
         out->parents[1] = B;
         out->n_parents = 2;
         out->backward = backward_sub_cpu;
-        out->grad = (float*)calloc(out->size, sizeof(float));
+        // out->grad = (float*)calloc(out->size, sizeof(float));
     }
 
     return out;

@@ -659,40 +659,59 @@ int main() {
     printf("p1- ");
     Tensor* d = tensor_div_autograd(c, b);
     printf("p2- ");
+    Tensor* j = tensor_add_autograd(a, b);
     
-    // tensor_backward(d, NULL); // compute gradients
-    // printf("p3- ");
-    // printf("grad a: ");
-    // for (int i = 0; i < a->size; i++) printf("%f ", a->grad[i]);
-    // printf("\n");
-
-    // printf("grad b: ");
-    // for (int i = 0; i < b->size; i++) printf("%f ", b->grad[i]);
-    // printf("\n");
-
-    // printf("grad c: ");
-    // for (int i = 0; i < c->size; i++) printf("%f ", c->grad[i]);
-    // printf("\n");
-
-
-    // printf("grad d: ");
-    // for (int i = 0; i < d->size; i++) printf("%f ", d->grad[i]);
-    // printf("\n");
 
     printf("d: ");
     for (int i = 0; i < d->size; i++) printf("%f ", d->data[i]);
     printf("\n");
 
-    Tensor* e = tensor_to_cuda(d);
-    Tensor* g = tensor_to_cuda(c);
-    Tensor* h = tensor_sub(e,c);
+    // Tensor* e = tensor_to_cuda(d);
+    // Tensor* g = tensor_to_cuda(c);
+    // Tensor* h = tensor_sub(e,g);
 
-    printf("=========================");
-    printf("tensor e device is: ");
-    print_tensor_info(e);
-    printf("tensor g device is: ");
+    Tensor* e = create_tensor_autograd(data1, shape1, ndim1, 1, DEVICE_CUDA);
+    Tensor* g = create_tensor_autograd(data2, shape2, ndim2, 1, DEVICE_CUDA);
+    Tensor* h = tensor_add_autograd(e,g);
+    Tensor* k = tensor_div_autograd(e,g);
+    printf("\nbefore tensor_backward is called!\n");
+
+
+    tensor_backward(k,NULL);
+    
+    printf("\nk ----------------------");
+    print_tensor_info(k);
+    printf("h ----------------------");
+    print_tensor_info(h);
+    printf("g ----------------------");
     print_tensor_info(g);
-    printf("tensor h device is: ");
+    printf("e ----------------------");
+    print_tensor_info(e);
+
+
+    printf("h->grad: \n");
+    for(int i=0; i<h->size; i++)
+        printf("%f ", h->grad[i]);
+    printf("==============================\n\n");
+    printf("e->grad: \n");
+    for(int i=0; i<e->size; i++)
+        printf("%f ", e->grad[i]);
+    printf("==============================\n\n");
+    printf("g->grad: \n");
+    for(int i=0; i<g->size; i++)
+        printf("%f ", g->grad[i]);
+    printf("==============================\n\n");
+
+    
+    
+    
+
+    printf("=========================\n");
+    printf("tensor e info is: ");
+    print_tensor_info(e);
+    printf("tensor g info is: ");
+    print_tensor_info(g);
+    printf("tensor h info is: ");
     print_tensor_info(h);
     printf("=========================");
 

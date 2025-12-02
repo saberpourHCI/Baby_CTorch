@@ -14,7 +14,7 @@ code .
 Then in the VS code that opens, open a "command prompt" terminal and run the following:
 
 '''
-nvcc src/tensor.c src/ops_add_sub_cpu.c src/ops_add_sub_cuda.cu src/ops_add_sub.c src/ops_mul_div.c src/main.c -o main.exe
+nvcc src/tensor.c src/ops_add_sub_cpu.c src/ops_add_sub_cuda.cu src/ops_add_sub.c src/ops_mul_div_cpu.c src/ops_mul_div_cuda.cu src/ops_mul_div.c src/main.c -o main.exe
 '''
 
 This would generate the "main.exe" file, that you can execute later.
