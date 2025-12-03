@@ -218,7 +218,7 @@ Tensor* tensor_div_cpu(const Tensor* a, const Tensor* b) {
 
 //     return out;
 // }
-
+/*
 Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
     if (A->ndim < 2 || B->ndim < 2) {
         fprintf(stderr, "Error: Matmul requires ndim >= 2\n");
@@ -332,3 +332,4 @@ Tensor* tensor_matmul(const Tensor* A, const Tensor* B) {
     free(out_batch_shape);
     return out;
 }
+*/

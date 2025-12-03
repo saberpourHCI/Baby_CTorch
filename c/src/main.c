@@ -1,6 +1,7 @@
 #include"tensor.h"
 #include"ops_add_sub.h"
 #include"ops_mul_div.h"
+#include"ops_matmul.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -648,9 +649,14 @@ int main() {
     int shape2[2] = {2,3};
     int ndim2 = 2;
 
+    float data3[6] = {4,5,6,7,8,9};
+    int shape3[2] = {3,2};
+    int ndim3 = 2;
+
 
     Tensor* a = create_tensor_autograd(data1, shape1, ndim1, 1, DEVICE_CPU);
     Tensor* b = create_tensor_autograd(data2, shape2, ndim2, 1, DEVICE_CPU);
+    
     printf("Here is the tensor info for A printed: \n");
     // a = tensor_to_cuda(a);
     print_tensor_info(a);
@@ -672,12 +678,18 @@ int main() {
 
     Tensor* e = create_tensor_autograd(data1, shape1, ndim1, 1, DEVICE_CUDA);
     Tensor* g = create_tensor_autograd(data2, shape2, ndim2, 1, DEVICE_CUDA);
-    Tensor* h = tensor_add_autograd(e,g);
+    Tensor* g_prime = create_tensor_autograd(data3, shape3, ndim3, 1, DEVICE_CUDA);
+    Tensor* h = tensor_mul_autograd(e,g);
     Tensor* k = tensor_div_autograd(e,g);
     printf("\nbefore tensor_backward is called!\n");
+    Tensor* s = tensor_matmul_autograd(g, g_prime);
+    tensor_backward(s, NULL);
+    print_tensor_info(s);
+    return 0;
 
 
     tensor_backward(k,NULL);
+    tensor_backward(h,NULL);
     
     printf("\nk ----------------------");
     print_tensor_info(k);

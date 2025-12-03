@@ -1,5 +1,5 @@
-#ifndef OPS_ADD_SUB_CUDA_H
-#define OPS_ADD_SUB_CUDA_H
+#ifndef OPS_MUL_DIV_CUDA_H
+#define OPS_MUL_DIV_CUDA_H
 
 
 #include "tensor.h"
