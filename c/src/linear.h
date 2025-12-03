@@ -23,7 +23,8 @@ typedef struct Linear {
 } Linear;
 
 
-
+Linear* linear_create(int in_features, int out_features, Device dev);
+Tensor* linear_forward(Linear* l, Tensor* x);
 
 
 

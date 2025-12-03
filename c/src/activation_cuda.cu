@@ -51,8 +51,8 @@ Tensor* relu_cuda(Tensor* x) {
     int blockSize = 256;
     int numBlocks = (out->size + blockSize - 1) / blockSize;
 
-    int blockSize = 256;
-    int numBlocks = (out->size + blockSize - 1) / blockSize;
+    // int blockSize = 256;
+    // int numBlocks = (out->size + blockSize - 1) / blockSize;
 
     relu_kernel<<<numBlocks, blockSize>>>(x->data, out->data, x->size);
 
