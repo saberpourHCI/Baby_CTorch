@@ -1,7 +1,10 @@
-#include"tensor.h"
-#include"ops_add_sub.h"
-#include"ops_mul_div.h"
-#include"ops_matmul.h"
+#include "tensor.h"
+#include "ops_add_sub.h"
+#include "ops_mul_div.h"
+#include "ops_matmul.h"
+#include "loss.h"
+#include "activation.h"
+#include "linear.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -653,10 +656,18 @@ int main() {
     int shape3[2] = {3,2};
     int ndim3 = 2;
 
+    float data4[1] = {2};
+    int shape4[1] = {1};
+    int ndim4 = 1;
 
     Tensor* a = create_tensor_autograd(data1, shape1, ndim1, 1, DEVICE_CPU);
     Tensor* b = create_tensor_autograd(data2, shape2, ndim2, 1, DEVICE_CPU);
+    Tensor* a0 = create_tensor_autograd(data4, shape4, ndim4, 1, DEVICE_CPU);
     
+    Tensor* a1 = tensor_div_autograd(a, a0);
+    print_tensor_info(a1);
+
+    return 0;
     printf("Here is the tensor info for A printed: \n");
     // a = tensor_to_cuda(a);
     print_tensor_info(a);
@@ -683,8 +694,13 @@ int main() {
     Tensor* k = tensor_div_autograd(e,g);
     printf("\nbefore tensor_backward is called!\n");
     Tensor* s = tensor_matmul_autograd(g, g_prime);
-    tensor_backward(s, NULL);
-    print_tensor_info(s);
+    // tensor_backward(s, NULL);
+    print_tensor_info(g);
+    Tensor* sum = tensor_sum_autograd(e);
+    tensor_backward(sum, NULL);
+    printf("\nhere is the sum info : \n");
+    print_tensor_info(e);
+    // printf("-> %f", sum->data[0]);
     return 0;
 
 

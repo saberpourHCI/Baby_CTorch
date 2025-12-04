@@ -11,7 +11,7 @@
 
 
 
-Linear* linear_create(int in_features, int out_features, Device dev) {
+Linear* linear_create(Model* model, int in_features, int out_features, Device dev) {
     Linear* l = malloc(sizeof(Linear));
 
     int w_shape[2] = { in_features, out_features };
@@ -20,6 +20,12 @@ Linear* linear_create(int in_features, int out_features, Device dev) {
     l->W = create_empty_tensor(w_shape, 2, 1, dev);
     l->b = create_empty_tensor(b_shape, 1, 1, dev);
 
+
+    if (model) {
+        model_register_param(model, l->W);
+        model_register_param(model, l->b);
+    }
+    
     // initialize W, b with small random values later (see below)
     return l;
 }
@@ -30,4 +36,12 @@ Tensor* linear_forward(Linear* l, Tensor* x) {
     Tensor* y = tensor_matmul_autograd(x, l->W);   // [batch, out_features]
     y = tensor_add_autograd(y, l->b);              // broadcast bias
     return y;
+}
+
+
+void linear_free(Linear* l) {
+    if (!l) return;
+    free_tensor(l->W);
+    free_tensor(l->b);
+    free(l);
 }

@@ -8,118 +8,6 @@
 #include <stddef.h>
 
 
-
-/*
-
-Tensor* tensor_add_cpu(const Tensor* a, const Tensor* b) {
-    int out_ndim;
-    int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
-    if (!out_shape) {
-        fprintf(stderr, "Error: Incompatible shapes for addition\n");
-        return NULL;
-    }
-
-    int out_size = compute_size(out_shape, out_ndim);
-    float* out_data = (float*)malloc(out_size * sizeof(float));
-    if (!out_data) {
-        free(out_shape);
-        fprintf(stderr, "Error: Memory allocation failed\n");
-        return NULL;
-    }
-
-    // Iterate through all elements using linear indexing
-    for (int i = 0; i < out_size; i++) {
-        // Compute multi-dimensional index
-        int idx_a = 0, idx_b = 0;
-        int rem = i;
-        for (int d = out_ndim - 1; d >= 0; d--) {
-            int coord = rem % out_shape[d];
-            rem /= out_shape[d];
-
-            int a_dim = (d >= out_ndim - a->ndim) ? a->shape[d - (out_ndim - a->ndim)] : 1;
-            int b_dim = (d >= out_ndim - b->ndim) ? b->shape[d - (out_ndim - b->ndim)] : 1;
-
-            int a_stride = (d >= out_ndim - a->ndim) ? a->strides[d - (out_ndim - a->ndim)] : 0;
-            int b_stride = (d >= out_ndim - b->ndim) ? b->strides[d - (out_ndim - b->ndim)] : 0;
-
-            if (a_dim != 1) idx_a += coord * a_stride;
-            if (b_dim != 1) idx_b += coord * b_stride;
-        }
-
-        out_data[i] = a->data[idx_a] + b->data[idx_b];
-    }
-    
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim, a->device);
-    // if(a->device==b->device){
-    //     Tensor* out = create_tensor(out_data, out_shape, out_ndim, a->device);
-    // }
-    // else {
-    //     printf("Both tensors should be on the same device");
-    // }
-
-    free(out_shape);
-    return out;
-}
-
-*/
-
-/*
-
-__global__ void tensor_add_broadcast_kernel(
-    const float* __restrict__ a,
-    const float* __restrict__ b,
-    float* __restrict__ out,
-    const int* __restrict__ out_shape, int out_ndim,
-    const int* __restrict__ a_shape,  const int* __restrict__ a_strides, int a_ndim,
-    const int* __restrict__ b_shape,  const int* __restrict__ b_strides, int b_ndim,
-    int out_size
-) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= out_size) return;
-
-    int idx_a = 0;
-    int idx_b = 0;
-    int rem = i;
-
-    // This mirrors your CPU broadcasting logic:
-    // walk from last dimension to first, compute coord in out,
-    // map to A/B indices using their shapes/strides and broadcasting rules.
-    for (int d = out_ndim - 1; d >= 0; --d) {
-        int coord = rem % out_shape[d];
-        rem /= out_shape[d];
-
-        // Map to A's dim/stride
-        int a_dim = 1;
-        int a_str = 0;
-        int a_offset = d - (out_ndim - a_ndim);
-        if (a_offset >= 0) {
-            a_dim = a_shape[a_offset];
-            a_str = a_strides[a_offset];
-        }
-
-        // Map to B's dim/stride
-        int b_dim = 1;
-        int b_str = 0;
-        int b_offset = d - (out_ndim - b_ndim);
-        if (b_offset >= 0) {
-            b_dim = b_shape[b_offset];
-            b_str = b_strides[b_offset];
-        }
-
-        if (a_dim != 1) {
-            idx_a += coord * a_str;
-        }
-        if (b_dim != 1) {
-            idx_b += coord * b_str;
-        }
-    }
-
-    out[i] = a[idx_a] + b[idx_b];
-}
-
-
-*/
-
 __global__ void set_float_to_data_kernel(float* data, int size, float val) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if(idx < size) {
@@ -265,6 +153,30 @@ __global__ void backward_sub_broadcast_kernel(
     if (grad_b) atomicAdd(&grad_b[idx_b], -g);
 }
 
+__global__ void sum_kernel(
+    const float* data_a,
+    float* data_out,
+    int input_size
+) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= input_size) return;
+    atomicAdd(&data_out[0], data_a[i]);
+}
+
+
+
+
+
+extern "C"
+Tensor* tensor_sum_cuda(const Tensor* a) {
+    // Launch kernel
+    int blockSize = 256;
+    int numBlocks = (a->size + blockSize - 1) / blockSize;
+    int shape[1] = {1};
+    Tensor* out = create_empty_tensor(shape, 1, 1, DEVICE_CUDA);
+    sum_kernel<<<numBlocks, blockSize>>>(a->data, out->data, a->size);
+    return out;
+}
 
 extern "C"
 float* cudaMemSetFloat(float* p, int size, float val) {

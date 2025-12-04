@@ -37,6 +37,8 @@ typedef struct Tensor {
 // Function declarations (prototypes)
 void free_tensor(Tensor* tensor);
 
+Tensor* tensor_ones(const int* shape, int ndim, int requires_grad, Device dev);
+
 Tensor* create_empty_tensor(const int* shape, int ndim, int requires_grad, Device dev);
 
 Tensor* create_tensor(float* data, const int* shape, int ndim, int requires_grad, Device dev);

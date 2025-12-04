@@ -19,62 +19,21 @@ void free_tensor(Tensor* tensor) {
 }
 
 
-// Tensor* create_tensor(float* data, const int* shape, int ndim, Device dev) {
-//     if (data == NULL || shape == NULL || ndim <= 0) {
-//         fprintf(stderr, "Invalid input parameters\n");
-//         return NULL;
-//     }
-
-//     Tensor* tensor = (Tensor*)malloc(sizeof(Tensor));
-//     if (tensor == NULL) {
-//         fprintf(stderr, "Failed allocating memory for tensor\n");
-//         return NULL;
-//     }
-
-//     tensor->data = data;
-//     tensor->shape = (int*)malloc(ndim * sizeof(int));
-//     if (tensor->shape == NULL) {
-//         fprintf(stderr, "Memory allocation failed\n");
-//         free(tensor);
-//         return NULL;
-//     }
-//     memcpy(tensor->shape, shape, ndim * sizeof(int));
-//     tensor->ndim = ndim;
-
-//     tensor->size = 1;
-//     for (int i = 0; i < ndim; i++) {
-//         tensor->size *= shape[i];
-//     }
-
-//     tensor->strides = (int*)malloc(ndim * sizeof(int));
-//     if (tensor->strides == NULL) {
-//         fprintf(stderr, "Memory allocation failed\n");
-//         free(tensor->shape);
-//         free(tensor);
-//         return NULL;
-//     }
-//     int stride = 1;
-//     for (int i = ndim - 1; i >= 0; i--) {
-//         tensor->strides[i] = stride;
-//         stride *= shape[i];
-//     }
-
-//     if(dev == DEVICE_CUDA) {
-//         tensor->device = dev;
-//     }
-//     else {
-//         tensor->device = DEVICE_CPU;
-//     }
-//     // if(dev == DEVICE_CPU || dev == DEVICE_CUDA) {
-//     //     tensor->device = dev;
-//     // }
-//     // else {
-//     //     tensor->device = DEVICE_CPU;
-//     // }
+Tensor* tensor_ones(const int* shape, int ndim, int requires_grad, Device dev) {
     
-
-//     return tensor;
-// }
+    int size = compute_size(shape, ndim);
+    printf("inside tensor_one ndim is %d and size is %d\n", ndim, size);
+    float* data= malloc(size * sizeof(float));
+    for (int i =0; i<size; i++) {
+        data[i] = 1;
+    }
+    for (int i=0; i<size; i++) {
+        printf("%f\n",data[i]);
+    }
+    Tensor* out= create_tensor_autograd(data, shape, ndim, requires_grad, dev);
+    free(data);
+    return out;// create_tensor_autograd(data, shape, ndim, requires_grad, dev);
+}
 
 Tensor* create_empty_tensor(const int* shape, int ndim, int requires_grad, Device dev) {
     Tensor* tensor = (Tensor*)malloc(sizeof(Tensor));
@@ -373,11 +332,17 @@ void tensor_backward(Tensor* t, float* grad) {
         for(int i=0; i<t->size; i++) {
             init_grad[i] = 1.0f;
         }
-        CUDA_CHECK(cudaMemcpy(t->grad, init_grad, t->size * sizeof(float), cudaMemcpyHostToDevice));
+        if(t->device == DEVICE_CUDA) {
+            CUDA_CHECK(cudaMemcpy(t->grad, init_grad, t->size * sizeof(float), cudaMemcpyHostToDevice));
+        }
+        else if(t->device == DEVICE_CPU) {
+            t->grad = init_grad;
+        }
         free(init_grad);
     }
     
     if (t->backward) {
+        printf("\n\n\n survived the grad init \n\n\n\n");
         t->backward(t); // Calculate the gradients of the parents
         printf("#############################################");
         for (int i = 0; i < t->n_parents; i++) {
@@ -489,3 +454,5 @@ Tensor* tensor_from_cuda(const Tensor* src) {
 
     return dst;
 }
+
+

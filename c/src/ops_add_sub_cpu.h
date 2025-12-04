@@ -3,6 +3,8 @@
 
 #include "tensor.h"
 
+Tensor* tensor_sum_cpu(const Tensor* a);
+
 Tensor* tensor_add_cpu(const Tensor* a, const Tensor* b);
 
 Tensor* tensor_sub_cpu(const Tensor* a, const Tensor* b);

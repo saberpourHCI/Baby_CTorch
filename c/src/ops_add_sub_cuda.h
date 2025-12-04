@@ -9,7 +9,8 @@
 extern "C" {
 #endif
 
-// Tensor* tensor_add_cuda(const Tensor* a, const Tensor* b);
+Tensor* tensor_sum_cuda(const Tensor* a);
+
 float* cudaMemSetFloat(float* p, int size, float val);
 
 Tensor* tensor_add_cuda(const Tensor* A, const Tensor* B);

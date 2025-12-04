@@ -4,6 +4,18 @@
 #include <stdio.h>
 
 
+Tensor* tensor_sum_cpu(const Tensor* a) {
+    int shape[1] = {1};
+    Tensor* out = create_empty_tensor(shape, 1, 1, DEVICE_CPU);
+    float sum = 0.0;
+    for(int i=0; i<a->size; i++) {
+        sum += a->data[i];
+    }
+    out->data[0] = sum;
+    return out;
+}
+
+
 Tensor* tensor_add_cpu(const Tensor* a, const Tensor* b) {
     int out_ndim;
     int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
@@ -210,9 +222,6 @@ void backward_add_cpu(Tensor* out) {
     }
 }
 
-
-
-
 void backward_sub_cpu(Tensor* out) {
     Tensor* A = out->parents[0];
     Tensor* B = out->parents[1];
@@ -304,29 +313,6 @@ void backward_sub_cpu(Tensor* out) {
     }
 }
 
-
-
-// void backward_add_cpu(Tensor* out) {
-//     Tensor* A = out->parents[0];
-//     Tensor* B = out->parents[1];
-
-//     for (int i = 0; i < A->size; i++)
-//         A->grad[i] += out->grad[i];
-
-//     for (int i = 0; i < B->size; i++)
-//         B->grad[i] += out->grad[i];
-// }
-
-// void backward_sub_cpu(Tensor* out) {
-//     Tensor* A = out->parents[0];
-//     Tensor* B = out->parents[1];
-
-//     for (int i = 0; i < A->size; i++)
-//         A->grad[i] += out->grad[i];
-
-//     for (int i = 0; i < B->size; i++)
-//         B->grad[i] -= out->grad[i];
-// }
 
 
 Tensor* tensor_add_autograd_cpu(Tensor* A, Tensor* B) {
