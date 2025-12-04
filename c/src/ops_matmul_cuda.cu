@@ -152,6 +152,7 @@ Tensor* tensor_matmul_cuda(const Tensor* A, const Tensor* B) {
 
 extern "C" 
 void backward_matmul_cuda(Tensor* out) {
+    // printf("backward_matmul_cuda\n");
     Tensor* a = out->parents[0];
     Tensor* b = out->parents[1];
 
@@ -223,6 +224,7 @@ if (b->requires_grad) {
     }
 
     CUDA_CHECK(cudaDeviceSynchronize());
+    // printf("\n finished backward_matmul_cuda");
 }
 
 

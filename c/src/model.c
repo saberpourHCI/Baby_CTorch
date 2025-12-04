@@ -18,5 +18,6 @@ void model_zero_grad(Model* m) {
 }
 
 void model_sgd_step(Model* m, float lr) {
+    printf("model_sgd_step\n");
     param_list_sgd_step(&m->params, lr);
 }

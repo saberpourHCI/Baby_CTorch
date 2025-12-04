@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 
 
 
@@ -153,7 +154,7 @@ Tensor* create_tensor(float* data, const int* shape, int ndim, int requires_grad
                             cudaMemcpyHostToDevice));
     }
     else {
-        tensor->data = data;
+        tensor->data = memcpy((void*)tensor->data, data, tensor->size * sizeof(float));// data;
     }
     return tensor;
 }
@@ -321,14 +322,45 @@ int* broadcast_shapes(const int* a_shape, int a_ndim, const int* b_shape, int b_
     return result_shape;
 }
 
-void tensor_backward(Tensor* t, float* grad) {
 
-    printf("\ninside tensor_backward reached\n");  
+void has_nan(Tensor* a) {
+    if(a->device==DEVICE_CUDA) {
+        float* t = malloc(a->size * sizeof(float));
+        CUDA_CHECK(cudaMemcpy((void*)t, 
+                                a->data, 
+                                a->size*sizeof(float), 
+                                cudaMemcpyDeviceToHost));
+        printf("\n=================================");
+        for(int i=0; i<a->size; i++) {
+            if (isnan(t[i])) {
+                printf("found NaN %d\n", a->size);
+             }
+        }
+        printf("=================================");
+
+    }
+    else if(a->device==DEVICE_CPU) {
+        printf("=================================");
+        for(int i=0; i<a->size; i++) {
+            if (isnan(a->data[i])) {
+                printf("found NaN %d\n", a->size);
+             }
+        }
+        printf("=================================");
+
+    }
+}
+
+
+void tensor_backward(Tensor* t, float* grad) {
+    // printf("entred_tensor_backward\n");
+
+    // printf("\ninside tensor_backward reached\n");  
     if (grad != NULL) {
-        printf("NOT-null================> t->grad is: something");// %f, and grad is: %f\n", t->grad[0], grad[0]);
+        // printf("NOT-null================> t->grad is: something");// %f, and grad is: %f\n", t->grad[0], grad[0]);
     } else {
-        printf("\n\n\n\n\nInside tensor_backward is reached\n\n\n\n\n");
-        float* init_grad = (float*)malloc(t->size);
+        // printf("\n\n\n\n\nInside tensor_backward is reached\n\n\n\n\n");
+        float* init_grad = (float*)malloc(t->size * sizeof(float));
         for(int i=0; i<t->size; i++) {
             init_grad[i] = 1.0f;
         }
@@ -336,23 +368,26 @@ void tensor_backward(Tensor* t, float* grad) {
             CUDA_CHECK(cudaMemcpy(t->grad, init_grad, t->size * sizeof(float), cudaMemcpyHostToDevice));
         }
         else if(t->device == DEVICE_CPU) {
-            t->grad = init_grad;
+            memcpy((void*)t->grad, init_grad, t->size*sizeof(float));// init_grad;
         }
         free(init_grad);
     }
-    
-    if (t->backward) {
-        printf("\n\n\n survived the grad init \n\n\n\n");
+    // printf("%d\n", t->size);
+    // has_nan(t);
+    if (t->n_parents!=0) {
+        // printf("\n\n\n survived the grad init \n\n\n\n");
         t->backward(t); // Calculate the gradients of the parents
-        printf("#############################################");
+        // printf("#############################################");
         for (int i = 0; i < t->n_parents; i++) {
             // printf("t->grad is: %f ####################################################\n", t->grad[0]);
-            printf("\ndevice is ---->%s\n", device_to_string(t->device));
-            printf("\nt->parents device is ---->%s\n",device_to_string(t->parents[i]->device));
+            // printf("\ndevice is ---->%s\n", device_to_string(t->device));
+            // printf("\nt->parents device is ---->%s\n",device_to_string(t->parents[i]->device));
+            // printf("i is: %d\n", i);
             tensor_backward(t->parents[i], t->grad); // recursive backward all the way to the root of the graph
             
         }
     }
+    // printf("exited_tensor_backward\n");
 }
 
 
@@ -362,7 +397,7 @@ Tensor* tensor_to_cuda(const Tensor* src) {
 
     if (src->device == DEVICE_CUDA) {
         fprintf(stderr, "tensor_to_cuda: tensor already on CUDA\n");
-        return NULL;
+        return (Tensor*)src;
     }
 
 
@@ -375,8 +410,8 @@ Tensor* tensor_to_cuda(const Tensor* src) {
     dst->ndim = src->ndim;
     dst->size = src->size;
     dst->requires_grad = src->requires_grad;
-    dst->parents = NULL;     // not copying graph here (for now)
-    dst->n_parents = 0;
+    dst->parents = src->parents;     // not copying graph here (for now)
+    dst->n_parents = src->n_parents;
     dst->backward = NULL;
     dst->device = DEVICE_CUDA;
 
@@ -393,6 +428,9 @@ Tensor* tensor_to_cuda(const Tensor* src) {
     memcpy(dst->shape, src->shape, dst->ndim * sizeof(int));
     memcpy(dst->strides, src->strides, dst->ndim * sizeof(int));
 
+    printf("inside tensor_to_cuda src:\n");
+    print_tensor_info(src);
+    Tensor* out = create_tensor(src->data, src->shape, src->ndim, src->requires_grad, DEVICE_CUDA);
     // Allocate device memory for data
     CUDA_CHECK(cudaMalloc((void**)&dst->data, dst->size * sizeof(float)));
 
@@ -402,10 +440,10 @@ Tensor* tensor_to_cuda(const Tensor* src) {
                           dst->size * sizeof(float),
                           cudaMemcpyHostToDevice));
 
-    // Not handling gradients on GPU yet
-    dst->grad = NULL;
-
-    return dst;
+    // // Not handling gradients on GPU yet
+    // dst->grad = NULL;
+    return out;
+    // return dst;
 }
 
 Tensor* tensor_from_cuda(const Tensor* src) {
@@ -417,22 +455,31 @@ Tensor* tensor_from_cuda(const Tensor* src) {
         return NULL;
     }
     
-    Tensor* dst = (Tensor*)malloc(sizeof(Tensor));
+    // Tensor* dst = (Tensor*)malloc(sizeof(Tensor));
 
-    dst->ndim = src->ndim;
-    dst->size = src->size;
-    dst->requires_grad = 0;//src->requires_grad;
-    dst->parents = NULL;     // not copying graph here (for now)
-    dst->n_parents = 0;
-    dst->backward = NULL;
-    dst->device = DEVICE_CPU;
-    dst->grad = NULL;
+    // dst->ndim = src->ndim;
+    // dst->size = src->size;
+    // dst->requires_grad = 0;//src->requires_grad;
+    // dst->parents = NULL;     // not copying graph here (for now)
+    // dst->n_parents = 0;
+    // dst->backward = NULL;
+    // dst->device = DEVICE_CPU;
+    // dst->grad = NULL;
+
+    Tensor* dst = create_empty_tensor(src->shape,
+                                    src->ndim,
+                                    src->requires_grad,
+                                    src->device);
 
     // Copy shape and strides to host memory
-    dst->shape = (int*)malloc(dst->ndim * sizeof(int));
-    dst->strides = (int*)malloc(dst->ndim * sizeof(int));
+    // dst->shape = (int*)malloc(dst->ndim * sizeof(int));
+    // dst->strides = (int*)malloc(dst->ndim * sizeof(int));
     // Instantiate the data pointer, when it is Null (0x0) the cudaMemcpy throws an error
-    dst->data = (float*)malloc(src->size * sizeof(float));
+    CUDA_CHECK(cudaMemcpy((void*)dst->data, 
+                        src->data,
+                        src->size * sizeof(float),
+                    cudaMemcpyDeviceToHost ));
+    // dst->data = (float*)malloc(src->size * sizeof(float));
     if (!dst->shape || !dst->strides || !dst->data) {
         fprintf(stderr, "tensor_fom_cuda: failed to allocate shape/strides\n");
         free(dst->shape);
@@ -442,13 +489,13 @@ Tensor* tensor_from_cuda(const Tensor* src) {
         return NULL;
     }
 
-    printf("\nq0: \n");
-    print_tensor_info(src);
-    CUDA_CHECK(cudaMemcpy(dst->data, src->data, src->size * sizeof(float), cudaMemcpyDeviceToHost));
+    // printf("\nq0: \n");
+    // print_tensor_info(src);
+    // CUDA_CHECK(cudaMemcpy(dst->data, src->data, src->size * sizeof(float), cudaMemcpyDeviceToHost));
     // CUDA_CHECK(cudaDeviceSynchronize());
-    printf("inside tensor_from_cuda, src->size is: %d\n", src->size);
+    // printf("inside tensor_from_cuda, src->size is: %d\n", src->size);
     // printf("inside tensor_from_cuda, src->data is: %f\n", src->data[0]);
-    printf("inside tensor_from_cuda, dst->data is: %f\n", dst->data[0]);
+    // printf("inside tensor_from_cuda, dst->data is: %f\n", dst->data[0]);
 
     
 

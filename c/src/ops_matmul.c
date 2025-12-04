@@ -23,6 +23,7 @@ Tensor* tensor_matmul(const Tensor* a, const Tensor* b) {
 
 
 Tensor* tensor_matmul_autograd(Tensor* A, Tensor* B) {
+    // printf("tensor_matmul_autograd called \n");
     Tensor* out = tensor_matmul(A, B);
     if (!out) return NULL;
 
@@ -37,7 +38,7 @@ Tensor* tensor_matmul_autograd(Tensor* A, Tensor* B) {
             // out->grad = (float*)calloc(out->size, sizeof(float));
         } else if(out->device == DEVICE_CUDA) {
             out->backward = backward_matmul_cuda;
-            printf("\n\nbackward cuda is assigned!!!\n\n");
+            // printf("\n\nbackward cuda is assigned!!!\n\n");
             // CUDA_CHECK(cudaMalloc((void**)&out->grad, out->size * sizeof(float)));
             
             // CUDA_CHECK(cudaMemset(out->grad, 0, out->size * sizeof(float)));

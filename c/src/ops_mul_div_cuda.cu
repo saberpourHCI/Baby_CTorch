@@ -352,7 +352,7 @@ Tensor* tensor_mul_cuda(const Tensor* A, const Tensor* B) {
     // tensor_add_kernel<<<numBlocks, blockSize>>>(A->data, B->data, out->data, out->size);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
-    printf("FINISHED executing tesnor_add_cuda-------------------->");
+    // printf("FINISHED executing tesnor_add_cuda-------------------->");
 
     return out;
 }
@@ -370,10 +370,10 @@ Tensor* tensor_div_cuda(const Tensor* A, const Tensor* B) {
         return NULL;
     }
 
-    if (A->size != B->size) {
-        fprintf(stderr, "tensor_sub_cuda: size mismatch, add would broadcast!\n");
-        // return NULL;
-    }
+    // if (A->size != B->size) {
+    //     fprintf(stderr, "tensor_sub_cuda: size mismatch, add would broadcast!\n");
+    //     // return NULL;
+    // }
 
     int* shape;
     int ndim;
@@ -435,7 +435,7 @@ Tensor* tensor_div_cuda(const Tensor* A, const Tensor* B) {
     // tensor_add_kernel<<<numBlocks, blockSize>>>(A->data, B->data, out->data, out->size);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
-    printf("FINISHED executing tesnor_add_cuda-------------------->");
+    // printf("FINISHED executing tesnor_add_cuda-------------------->");
 
     return out;
 }
@@ -445,7 +445,8 @@ Tensor* tensor_div_cuda(const Tensor* A, const Tensor* B) {
 
 extern "C"
 void backward_mul_cuda(Tensor* out) {
-    printf("\n\n\n\n ENTERED THE BACKWARD_ADD_CUDA\n\n\n\n");
+    // printf("backward_mul_cuda\n");
+    // printf("\n\n\n\n ENTERED THE BACKWARD_ADD_CUDA\n\n\n\n");
     if(out->device != DEVICE_CUDA) {
         printf("backward_add_cuda argument not on CUDA device");
     }
@@ -460,7 +461,7 @@ void backward_mul_cuda(Tensor* out) {
     const int a_ndim = A->ndim;
     const int b_ndim = B->ndim;
     const int out_size = out->size;
-    printf("\n\n\n********************************\n%d %d %d %d \n***************************************\n\n\n", out_ndim, a_ndim, b_ndim, out_size);
+    // printf("\n\n\n********************************\n%d %d %d %d \n***************************************\n\n\n", out_ndim, a_ndim, b_ndim, out_size);
 
     if (A && A->requires_grad) {
         if (!A->grad) {
@@ -546,9 +547,9 @@ void backward_mul_cuda(Tensor* out) {
         out->size
     );
     CUDA_CHECK(cudaGetLastError());
-    printf("\npp0\n");
+    // printf("\npp0\n");
     CUDA_CHECK(cudaDeviceSynchronize());
-    printf("\nout->device: %s\n", device_to_string(out->device));
+    // printf("\nout->device: %s\n", device_to_string(out->device));
 
     // cudaPointerAttributes attr;
     // cudaError_t err = cudaPointerGetAttributes(&attr, out->grad);
@@ -576,14 +577,15 @@ void backward_mul_cuda(Tensor* out) {
     CUDA_CHECK(cudaFree(a_strides_device));
     CUDA_CHECK(cudaFree(b_shape_device));
     CUDA_CHECK(cudaFree(b_strides_device));
-    printf("\n\n\n executed backward_add_cuda\n\n\n");
+    // printf("\n\n\n executed backward_add_cuda\n\n\n");
 
 }
 
 
 extern "C"
 void backward_div_cuda(Tensor* out) {
-    printf("\n\n\n\n ENTERED THE BACKWARD_SUB_CUDA\n\n\n\n");
+    // printf("backward_div_cuda\n");
+    // printf("\n\n\n\n ENTERED THE BACKWARD_SUB_CUDA\n\n\n\n");
     if(out->device != DEVICE_CUDA) {
         printf("backward_sub_cuda argument not on CUDA device");
     }
@@ -598,7 +600,7 @@ void backward_div_cuda(Tensor* out) {
     const int a_ndim = A->ndim;
     const int b_ndim = B->ndim;
     const int out_size = out->size;
-    printf("\n\n\n********************************\n%d %d %d %d \n***************************************\n\n\n", out_ndim, a_ndim, b_ndim, out_size);
+    // printf("\n\n\n********************************\n%d %d %d %d \n***************************************\n\n\n", out_ndim, a_ndim, b_ndim, out_size);
 
     if (A && A->requires_grad) {
         if (!A->grad) {
@@ -676,7 +678,7 @@ void backward_div_cuda(Tensor* out) {
     );
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
-    printf("\nout->device: %s\n", device_to_string(out->device));
+    // printf("\nout->device: %s\n", device_to_string(out->device));
 
     // CUDA_CHECK(cudaMemcpy(out->grad, out_grads_device,
     //                       out->size * sizeof(float),
@@ -688,7 +690,7 @@ void backward_div_cuda(Tensor* out) {
     CUDA_CHECK(cudaFree(a_strides_device));
     CUDA_CHECK(cudaFree(b_shape_device));
     CUDA_CHECK(cudaFree(b_strides_device));
-    printf("\n\n\n executed backward_add_cuda\n\n\n");
+    // printf("\n\n\n executed backward_add_cuda\n\n\n");
 
 }
 

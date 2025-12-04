@@ -67,6 +67,7 @@ void param_list_zero_grad(ParamSet* pl) {
 
 extern "C"
 void param_list_sgd_step(ParamSet* pl, float lr) {
+    printf("param_list_sgd_step");
     for (int i = 0; i < pl->params_num; ++i) {
         Tensor* t = pl->params_list[i];
         if (!t || !t->requires_grad || !t->grad) continue;
@@ -87,4 +88,5 @@ void param_list_sgd_step(ParamSet* pl, float lr) {
             CUDA_CHECK(cudaDeviceSynchronize());
         }
     }
+    printf("param_list_sgd_step");
 }

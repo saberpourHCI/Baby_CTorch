@@ -14,6 +14,7 @@ Tensor* MSE(Tensor* y_pred, Tensor* y_true) {
         printf("inside 'MSE', size mismatch between y_pred and y_true");
     }
     Tensor* diff = tensor_sub_autograd(y_pred, y_true);
+
     Tensor* sqr = tensor_mul_autograd(diff, diff);
     Tensor* sum = tensor_sum_autograd(sqr);
     float N_val = (float)y_pred->size;

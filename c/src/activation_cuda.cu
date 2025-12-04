@@ -58,7 +58,7 @@ Tensor* relu_cuda(Tensor* x) {
 
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
-    printf("FINISHED executing relu_cuda-------------------->");
+    // printf("FINISHED executing relu_cuda-------------------->");
     return out;
 }
 
@@ -66,6 +66,7 @@ Tensor* relu_cuda(Tensor* x) {
 
 extern "C"
 void backward_relu_cuda(Tensor* out) {
+    // printf("backward_relu_cuda\n");
     if (!out) {
         printf("backward relu_cuda: NULL input\n");
         return;
@@ -84,7 +85,7 @@ void backward_relu_cuda(Tensor* out) {
 
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
-    printf("FINISHED executing backward_relu_cuda-------------------->");
+    // printf("FINISHED executing backward_relu_cuda-------------------->");
 }
 
 

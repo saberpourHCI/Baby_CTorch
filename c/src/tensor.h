@@ -54,6 +54,8 @@ int compute_size(const int* shape, int ndim);
 
 int* broadcast_shapes(const int* a_shape, int a_ndim, const int* b_shape, int b_ndim, int* out_ndim);
 
+void has_nan(Tensor* a);
+
 void tensor_backward(Tensor* t, float* grad);
 
 Tensor* tensor_to_cuda(const Tensor* src);

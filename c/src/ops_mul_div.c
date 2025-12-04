@@ -52,7 +52,7 @@ Tensor* tensor_mul_autograd(Tensor* A, Tensor* B) {
             // out->grad = (float*)calloc(out->size, sizeof(float));
         } else if(out->device == DEVICE_CUDA) {
             out->backward = backward_mul_cuda;
-            printf("\n\nbackward cuda is assigned!!!\n\n");
+            // printf("\n\nbackward cuda is assigned!!!\n\n");
             // CUDA_CHECK(cudaMalloc((void**)&out->grad, out->size * sizeof(float)));
             
             // CUDA_CHECK(cudaMemset(out->grad, 0, out->size * sizeof(float)));
@@ -82,7 +82,7 @@ Tensor* tensor_div_autograd(Tensor* A, Tensor* B) {
             // out->grad = (float*)calloc(out->size, sizeof(float));
         } else if(out->device == DEVICE_CUDA) {
             out->backward = backward_div_cuda;
-            printf("\n\n'tensor_sub_autograd' backward cuda is assigned!!!\n\n");
+            // printf("\n\n'tensor_sub_autograd' backward cuda is assigned!!!\n\n");
             // CUDA_CHECK(cudaMalloc((void**)&out->grad, out->size * sizeof(float)));
             
             // CUDA_CHECK(cudaMemset(out->grad, 0, out->size * sizeof(float)));
