@@ -32,7 +32,7 @@ void create_sine_dataset(int N,
     for (int i = 0; i < N; ++i) {
         float t = (two_pi * i) / (float)N;
         x_data[i] = t;           // input
-        y_data[i] = sinf(t);     // target
+        y_data[i] = sinf(t)/(N);     // target
     }
 
     int shape[2] = { N, 1 };
@@ -54,6 +54,7 @@ void create_sine_dataset(int N,
 }
 
 Tensor* forward(Linear* l1, Linear* l2, Tensor* x) {
+
     Tensor* h = linear_forward(l1, x);
     h = relu_autograd(h);
     Tensor* y_pred = linear_forward(l2, h);
@@ -102,12 +103,14 @@ Linear* l2 = linear_create(model, 16, 1, DEVICE_CUDA);
 
 
 // printf("\np2\n");
-float lr = 0.001;
-int epochs = 10;
+float lr = 0.002;
+int epochs = 200;
 printf("entered for loop.\n");
 for (int epoch = 0; epoch < epochs; ++epoch) {
         // printf("\np3\n");
         // Forward
+        printf("\n\nForward-------------------------------------------->\n\n");
+        printf("\nforward: ");
         Tensor* y_pred = forward(l1, l2, x);      // on CUDA
         // printf("\np4\n");
         
@@ -120,7 +123,9 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
         // printf("\np-1\n");
 
         // printf("\np6\n");
+        printf("\n\nBackward-------------------------------------------->\n\n");
         tensor_backward(loss, NULL);   // assume NULL means grad=1 for scalar
+        printf("\n");
         
         // printf("\np7\n");
         // Optimizer step
@@ -133,18 +138,7 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
         printf("\nepoch: %d\n", epoch);
         // free(l);
         print_tensor_info(loss);
-        // return 0;
-        // printf("\np8\n");
-        // (Optional) copy loss to CPU and print sometimes
-        // if (epoch % 1 == 0) {
-            // Tensor* loss_cpu = tensor_from_cuda(loss);
-            // printf("epoch %d, loss = %f\n", epoch, loss_cpu->data[0]);
-            // free_tensor(loss_cpu);
-        // }
 
-        // ⚠️ Depending on your autograd design, y_pred and loss may be
-        // newly allocated every epoch; you probably want to free them here
-        // once you're done using them:
         free_tensor(y_pred);
         free_tensor(loss);
     }

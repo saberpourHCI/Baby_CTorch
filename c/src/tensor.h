@@ -30,6 +30,9 @@ typedef struct Tensor {
     int n_parents;
     void (*backward)(struct Tensor* self);
     Device device;
+
+    int layer_id;   // which layer "owns" this tensor (-1 = no owner)
+    int param_role; // 0 = none, 1 = weight, 2 = bias
 } Tensor;
 
 

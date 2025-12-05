@@ -43,6 +43,9 @@ Tensor* create_empty_tensor(const int* shape, int ndim, int requires_grad, Devic
         return NULL;
     }
 
+    tensor->layer_id  = -1;
+    tensor->param_role = 0;
+
     
     tensor->shape = (int*)malloc(ndim * sizeof(int));
     if (tensor->shape == NULL) {
@@ -219,7 +222,7 @@ void print_tensor_info(const Tensor* t) {
     }
     printf("]\n");
 
-
+/*
     if (t->device == DEVICE_CPU) {
         printf("Tensor data is:\n");
         for (int i = 0; i < t->size; i++) {
@@ -264,7 +267,8 @@ void print_tensor_info(const Tensor* t) {
         printf("\n");
 
         
-
+        free(cpu_buf);
+        cpu_buf = (float*)malloc(t->size * sizeof(float));
         if(t->requires_grad == 1) {
             if (!t->grad) {
                 printf("\nFailed to allocate t->grad in print_tensor_data\n");
@@ -288,10 +292,12 @@ void print_tensor_info(const Tensor* t) {
     } else {
         printf("Unknown device\n");
     }
-
+*/
     
     
     printf("Device is: %s\n", device_to_string(t->device));
+    printf("Layer_id is: %d\n", t->layer_id);
+    printf("param_role: %d\n", t->param_role);
     printf("==================================\n");
 }
 
@@ -354,10 +360,25 @@ void has_nan(Tensor* a) {
 
 void tensor_backward(Tensor* t, float* grad) {
     // printf("entred_tensor_backward\n");
+    if(!t) {
+        return;
+    }
+    if(!t->requires_grad) {
+        return;
+    }
 
     // printf("\ninside tensor_backward reached\n");  
     if (grad != NULL) {
         // printf("NOT-null================> t->grad is: something");// %f, and grad is: %f\n", t->grad[0], grad[0]);
+        if(t->device == DEVICE_CUDA) {
+            if(!t->grad) {
+                CUDA_CHECK(cudaMalloc((void**)&t->grad, t->size * sizeof(float)));
+            }
+            CUDA_CHECK(cudaMemcpy(t->grad, grad, t->size * sizeof(float), cudaMemcpyHostToDevice));
+        }
+        else if(t->device == DEVICE_CPU) {
+            memcpy((void*)t->grad, grad, t->size*sizeof(float));// init_grad;
+        }
     } else {
         // printf("\n\n\n\n\nInside tensor_backward is reached\n\n\n\n\n");
         float* init_grad = (float*)malloc(t->size * sizeof(float));
@@ -372,22 +393,15 @@ void tensor_backward(Tensor* t, float* grad) {
         }
         free(init_grad);
     }
-    // printf("%d\n", t->size);
-    // has_nan(t);
+
+    
     if (t->n_parents!=0) {
-        // printf("\n\n\n survived the grad init \n\n\n\n");
         t->backward(t); // Calculate the gradients of the parents
-        // printf("#############################################");
         for (int i = 0; i < t->n_parents; i++) {
-            // printf("t->grad is: %f ####################################################\n", t->grad[0]);
-            // printf("\ndevice is ---->%s\n", device_to_string(t->device));
-            // printf("\nt->parents device is ---->%s\n",device_to_string(t->parents[i]->device));
-            // printf("i is: %d\n", i);
             tensor_backward(t->parents[i], t->grad); // recursive backward all the way to the root of the graph
             
         }
     }
-    // printf("exited_tensor_backward\n");
 }
 
 

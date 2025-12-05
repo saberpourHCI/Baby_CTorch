@@ -1,6 +1,9 @@
 #ifndef CUDA_UTILS_H
 #define CUDA_UTILS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <cuda_runtime.h>
 #include <stdio.h>
@@ -19,4 +22,7 @@
 void where_is_float_pointer(float* ptr);
 void where_is_int_pointer(int* ptr);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

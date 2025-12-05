@@ -152,6 +152,7 @@ Tensor* tensor_matmul_cuda(const Tensor* A, const Tensor* B) {
 
 extern "C" 
 void backward_matmul_cuda(Tensor* out) {
+    printf("matmul --> ");
     // printf("backward_matmul_cuda\n");
     Tensor* a = out->parents[0];
     Tensor* b = out->parents[1];
@@ -189,7 +190,7 @@ void backward_matmul_cuda(Tensor* out) {
             printf("inside backward_matmul_cuda a->grad is not instantiated!");
         }
     }
-if (b->requires_grad) {
+    if (b->requires_grad) {
         if (!b->grad) {
             printf("inside backward_matmul_cuda b->grad is not instantiated!");
         }
@@ -205,7 +206,7 @@ if (b->requires_grad) {
                    (m + block.y - 1) / block.y);
 
         matmul_gradA_kernel<<<grid_a, block>>>(
-            grad_out, b->data, a->grad,
+            out->grad, b->data, a->grad,
             m, k, n
         );
         CUDA_CHECK(cudaGetLastError());

@@ -15,6 +15,7 @@ typedef struct Linear Linear;
 typedef struct Linear {
     Tensor* W;   // [in_features, out_features]
     Tensor* b;   // [out_features]
+    int id;
 } Linear;
 
 

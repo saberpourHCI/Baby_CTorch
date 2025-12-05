@@ -23,6 +23,7 @@ Tensor* tensor_matmul(const Tensor* a, const Tensor* b) {
 
 
 Tensor* tensor_matmul_autograd(Tensor* A, Tensor* B) {
+    printf("matmul -->");
     // printf("tensor_matmul_autograd called \n");
     Tensor* out = tensor_matmul(A, B);
     if (!out) return NULL;

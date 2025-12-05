@@ -239,22 +239,18 @@ void backward_sub_cpu(Tensor* out) {
     if (A && A->requires_grad) {
         if (!A->grad) {
             printf("ERROR: 'backward_sub_cpu' tensor 'A' requires grad, but grad pointer not allocated\n");
-            // A->grad = (float*)calloc(A->size, sizeof(float));
-            // if (!A->grad) {
-            //     fprintf(stderr, "backward_add: failed to allocate A->grad\n");
-            //     return;
-            // }
+            float* tmp = (float*) malloc(A->size* sizeof(float));
+            memcpy(A->grad, tmp, A->size*sizeof(float));
+            free(tmp);
         }
     }
 
     if (B && B->requires_grad) {
         if (!B->grad) {
-            printf("ERROR: 'backward_sub_cpu' tensor 'B' requires grad, but grad pointer not allocated\n");
-            // B->grad = (float*)calloc(B->size, sizeof(float));
-            // if (!B->grad) {
-            //     fprintf(stderr, "backward_add: failed to allocate B->grad\n");
-            //     return;
-            // }
+            printf("ERROR: 'backward_sub_cpu' tensor 'A' requires grad, but grad pointer not allocated\n");
+            float* tmp = (float*) malloc(B->size* sizeof(float));
+            memcpy(B->grad, tmp, B->size*sizeof(float));
+            free(tmp);
         }
     }
 

@@ -38,6 +38,7 @@ Tensor* tensor_div(const Tensor* a, const Tensor* b) {
 
 
 Tensor* tensor_mul_autograd(Tensor* A, Tensor* B) {
+    printf("mul -->");
     Tensor* out = tensor_mul(A, B);
     if (!out) return NULL;
 
@@ -68,6 +69,7 @@ Tensor* tensor_mul_autograd(Tensor* A, Tensor* B) {
 }
 
 Tensor* tensor_div_autograd(Tensor* A, Tensor* B) {
+    printf("div -->");
     Tensor* out = tensor_div(A, B);
     if (!out) return NULL;
 

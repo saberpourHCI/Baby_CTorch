@@ -3,6 +3,7 @@
 
 void model_init(Model* m) {
     param_list_init(&m->params);
+    m->next_layer_id = 0;
 }
 
 void model_free(Model* m) {

@@ -26,6 +26,7 @@ Tensor* relu(Tensor* x) {
 
 
 Tensor* relu_autograd(Tensor* x) {
+    printf("relu -->");
     // printf("relu_autograd  called1\n");
     Tensor* out = relu(x);// create_empty_tensor(x->shape, x->ndim, x->requires_grad, x->device);
     if (!out) return NULL;

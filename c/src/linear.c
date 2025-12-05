@@ -32,10 +32,21 @@ Linear* linear_create(Model* model, int in_features, int out_features, Device de
     }
     l->b = create_tensor(b, b_shape, 1, 1, dev);
     free(b);
+    
+    // assign layer id
+    if (model) {
+        l->id = model->next_layer_id++;
+    } else {
+        l->id = -1;
+    }
 
-    // l->W = create_empty_tensor(w_shape, 2, 1, dev);
-    // l->b = create_empty_tensor(b_shape, 1, 1, dev);
+    // mark tensors with layer_id and role
+    l->W->layer_id  = l->id;
+    l->W->param_role = 1; // weight
+    l->b->layer_id  = l->id;
+    l->b->param_role = 2; // bias
 
+    
 
     if (model) {
         model_register_param(model, l->W);

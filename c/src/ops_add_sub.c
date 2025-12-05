@@ -51,6 +51,8 @@ Tensor* tensor_sub(const Tensor* a, const Tensor* b) {
 
 
 Tensor* tensor_add_autograd(Tensor* A, Tensor* B) {
+    printf("add -->");
+    // printf("add -->");
     Tensor* out = tensor_add(A, B);
     if (!out) return NULL;
 
@@ -81,6 +83,7 @@ Tensor* tensor_add_autograd(Tensor* A, Tensor* B) {
 }
 
 Tensor* tensor_sub_autograd(Tensor* A, Tensor* B) {
+    printf("sub -->");
     Tensor* out = tensor_sub(A, B);
     if (!out) return NULL;
 
@@ -113,6 +116,7 @@ Tensor* tensor_sub_autograd(Tensor* A, Tensor* B) {
 
 
 void backward_sum(Tensor* out) {
+    printf("sum --> ");
     // printf("backward_sum_cuda\n");
     Tensor* a = out->parents[0];
     // Tensor* ones = tensor_ones(a->shape, a->ndim, 1, out->device);
@@ -125,7 +129,7 @@ void backward_sum(Tensor* out) {
         CUDA_CHECK(cudaMemcpy(a->grad, grads, a->size * sizeof(float), cudaMemcpyHostToDevice));
     }
     else if(out->device==DEVICE_CPU) {
-        a->grad = grads;//ones->data;
+        memcpy((void**)&a->grad, grads, a->size * sizeof(float));// grads;//ones->data;
     }
     free(grads);
     
@@ -134,6 +138,7 @@ void backward_sum(Tensor* out) {
 
 
 Tensor* tensor_sum_autograd(Tensor* a) {
+    printf("sum --> ");
     Tensor* out = tensor_sum(a);
     if (!out) return NULL;
 

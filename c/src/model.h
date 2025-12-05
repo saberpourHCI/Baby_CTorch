@@ -5,6 +5,7 @@
 
 typedef struct {
     ParamSet params;
+    int next_layer_id;
 } Model;
 
 void model_init(Model* m);

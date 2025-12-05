@@ -190,6 +190,7 @@ float* cudaMemSetFloat(float* p, int size, float val) {
 
 extern "C"
 Tensor* tensor_add_cuda(const Tensor* A, const Tensor* B) {
+    // printf("add --> ");
     if (!A || !B) {
         fprintf(stderr, "tensor_add_cuda: NULL input\n");
         return NULL;
@@ -200,6 +201,30 @@ Tensor* tensor_add_cuda(const Tensor* A, const Tensor* B) {
         return NULL;
     }
 
+    if (A && A->requires_grad) {
+        if (!A->grad) {
+            printf("ERROR: 'backward_add_cpu' tensor 'A' requires grad, but grad pointer not allocated\n");
+            CUDA_CHECK(cudaMalloc((void**)&A->grad, A->size * sizeof(float)));
+            CUDA_CHECK(cudaMemset(A->grad, 0, A->size * sizeof(float)));
+            // A->grad = (float*)calloc(A->size, sizeof(float));
+            // if (!A->grad) {
+            //     fprintf(stderr, "backward_add: failed to allocate A->grad\n");
+            //     return;
+            // }
+        }
+    }
+    if (B && B->requires_grad) {
+        if (!B->grad) {
+            printf("ERROR: 'backward_add_cpu' tensor 'A' requires grad, but grad pointer not allocated\n");
+            CUDA_CHECK(cudaMalloc((void**)&B->grad, B->size * sizeof(float)));
+            CUDA_CHECK(cudaMemset(B->grad, 0, B->size * sizeof(float)));
+            // A->grad = (float*)calloc(A->size, sizeof(float));
+            // if (!A->grad) {
+            //     fprintf(stderr, "backward_add: failed to allocate A->grad\n");
+            //     return;
+            // }
+        }
+    }
     // if (A->size != B->size) {
     //     fprintf(stderr, "tensor_add_cuda: size mismatch, add would broadcast!\n");
     //     // return NULL;
@@ -265,6 +290,12 @@ Tensor* tensor_add_cuda(const Tensor* A, const Tensor* B) {
     // tensor_add_kernel<<<numBlocks, blockSize>>>(A->data, B->data, out->data, out->size);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
+
+    cudaFree(a_shape_device);
+    cudaFree(b_shape_device); 
+    cudaFree(out_shape_device);
+    cudaFree(a_strides_device);
+    cudaFree(b_strides_device);
     // printf("FINISHED executing tesnor_add_cuda-------------------->");
 
     return out;
@@ -273,6 +304,7 @@ Tensor* tensor_add_cuda(const Tensor* A, const Tensor* B) {
 
 extern "C"
 Tensor* tensor_sub_cuda(const Tensor* A, const Tensor* B) {
+    // printf("sub -->");
     if (!A || !B) {
         fprintf(stderr, "tensor_sub_cuda: NULL input\n");
         return NULL;
@@ -357,6 +389,7 @@ Tensor* tensor_sub_cuda(const Tensor* A, const Tensor* B) {
 
 extern "C"
 void backward_add_cuda(Tensor* out) {
+    printf("add --> ");
     // printf("backward_add_cuda\n");
     // printf("\n\n\n\n ENTERED THE BACKWARD_ADD_CUDA\n\n\n\n");
     if(out->device != DEVICE_CUDA) {
@@ -494,6 +527,7 @@ void backward_add_cuda(Tensor* out) {
 
 extern "C"
 void backward_sub_cuda(Tensor* out) {
+    printf("sub --> ");
     // printf("backward_sub_cuda\n");
     // printf("\n\n\n\n ENTERED THE BACKWARD_SUB_CUDA\n\n\n\n");
     if(out->device != DEVICE_CUDA) {
@@ -502,6 +536,8 @@ void backward_sub_cuda(Tensor* out) {
 
     Tensor* A = out->parents[0];
     Tensor* B = out->parents[1];
+
+
 
         // Assume all on CUDA; you can add asserts:
     // A->device == DEVICE_CUDA, B->device == DEVICE_CUDA, out->device == DEVICE_CUDA
@@ -512,19 +548,19 @@ void backward_sub_cuda(Tensor* out) {
     const int out_size = out->size;
     // printf("\n\n\n********************************\n%d %d %d %d \n***************************************\n\n\n", out_ndim, a_ndim, b_ndim, out_size);
 
-    if (A && A->requires_grad) {
-        if (!A->grad) {
-            CUDA_CHECK(cudaMalloc((void**)&A->grad, A->size * sizeof(float)));
-            CUDA_CHECK(cudaMemset(A->grad, 0, A->size * sizeof(float)));
-        }
-    }
+    // if (A && A->requires_grad) {
+    //     if (!A->grad) {
+    //         CUDA_CHECK(cudaMalloc((void**)&A->grad, A->size * sizeof(float)));
+    //         CUDA_CHECK(cudaMemset(A->grad, 0, A->size * sizeof(float)));
+    //     }
+    // }
 
-    if (B && B->requires_grad) {
-        if (!B->grad) {
-            CUDA_CHECK(cudaMalloc((void**)&B->grad, B->size * sizeof(float)));
-            CUDA_CHECK(cudaMemset(B->grad, 0, B->size * sizeof(float)));
-        }
-    }
+    // if (B && B->requires_grad) {
+    //     if (!B->grad) {
+    //         CUDA_CHECK(cudaMalloc((void**)&B->grad, B->size * sizeof(float)));
+    //         CUDA_CHECK(cudaMemset(B->grad, 0, B->size * sizeof(float)));
+    //     }
+    // }
 
     int* a_shape_device;
     int* b_shape_device; 
@@ -533,7 +569,7 @@ void backward_sub_cuda(Tensor* out) {
     int* b_strides_device;
     // float* a_grads_device;
     // float* b_grads_device;
-    float* out_grads_device;
+    // float* out_grads_device;
 
 
 
@@ -564,17 +600,17 @@ void backward_sub_cuda(Tensor* out) {
                           cudaMemcpyHostToDevice));
 
     
-    CUDA_CHECK(cudaMalloc((void**)&out_grads_device, out->size * sizeof(float)));
-    CUDA_CHECK(cudaMemcpy(out_grads_device, out->grad,
-                          out->size * sizeof(float),
-                          cudaMemcpyHostToDevice));
+    // CUDA_CHECK(cudaMalloc((void**)&out_grads_device, out->size * sizeof(float)));
+    // CUDA_CHECK(cudaMemcpy(out_grads_device, out->grad,
+    //                       out->size * sizeof(float),
+    //                       cudaMemcpyHostToDevice));
     
     
     
     // Launch kernel
     int blockSize = 256;
     int numBlocks = (out_size + blockSize - 1) / blockSize;
-
+    
     backward_sub_broadcast_kernel<<<numBlocks, blockSize>>>(
         out->grad,
         A->grad,
@@ -604,7 +640,7 @@ void backward_sub_cuda(Tensor* out) {
 
 
 
-
+/*
 Tensor* tensor_add_autograd_cuda(Tensor* A, Tensor* B) {
     Tensor* out = tensor_add_cuda(A, B);
     if (!out) return NULL;
@@ -615,6 +651,7 @@ Tensor* tensor_add_autograd_cuda(Tensor* A, Tensor* B) {
         out->parents[1] = B;
         out->n_parents = 2;
         out->backward = backward_add_cuda;
+        // CUDA_CHECK(cudaMalloc((void**)&out->grad, out->size * sizeof(float)));
         // out->grad = (float*)calloc(out->size, sizeof(float));
     }
 
@@ -632,14 +669,15 @@ Tensor* tensor_sub_autograd_cuda(Tensor* A, Tensor* B) {
         out->parents[1] = B;
         out->n_parents = 2;
         out->backward = backward_sub_cuda;
-        out->grad = (float*)calloc(out->size, sizeof(float));
+        // out->grad = (float*)calloc(out->size, sizeof(float));
+        // CUDA_CHECK(cudaMalloc((void**)&out->grad, out->size * sizeof(float)));
     }
 
     return out;
 }
 
 
-
+*/
 
 
 

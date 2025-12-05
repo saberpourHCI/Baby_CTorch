@@ -35,6 +35,7 @@ __global__ void backward_relu_kernel(const float* data_out,
 
 extern "C"
 Tensor* relu_cuda(Tensor* x) {
+    // printf("relu --> ");
         if (!x) {
         printf("relu_cuda: NULL input\n");
         return NULL;
@@ -66,6 +67,7 @@ Tensor* relu_cuda(Tensor* x) {
 
 extern "C"
 void backward_relu_cuda(Tensor* out) {
+    printf("relu --> ");
     // printf("backward_relu_cuda\n");
     if (!out) {
         printf("backward relu_cuda: NULL input\n");
