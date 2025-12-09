@@ -743,7 +743,7 @@ int main() {
     print_tensor_info(h);
     printf("=========================");
 
-    Tensor* f = tensor_from_cuda(e);
+    Tensor* f = tensor_to_cpu(e);
     printf("\n\ntensor e->data is: %f \n\n", f->data[0]);
 
     printf("tensor e device is: ");

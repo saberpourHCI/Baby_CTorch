@@ -56,7 +56,7 @@ void param_list_zero_grad(ParamSet* pl) {
     for (int i = 0; i < pl->params_num; ++i) {
         Tensor* t = pl->params_list[i];
         if (!t || !t->grad) continue;
-
+        t->backward_visited = 0;
         if (t->device == DEVICE_CPU) {
             memset(t->grad, 0, t->size * sizeof(float));
         } else if (t->device == DEVICE_CUDA) {

@@ -2,10 +2,11 @@
 #ifndef TENSOR_H
 #define TENSOR_H
 
-
+extern int in_debug;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 
 
@@ -24,6 +25,7 @@ typedef struct Tensor {
     int ndim;
     int size;
     int requires_grad;
+    int backward_visited;
     // int grad_initialized;
     // ... whatever else you already have
     struct Tensor** parents;
@@ -63,7 +65,7 @@ void tensor_backward(Tensor* t, float* grad);
 
 Tensor* tensor_to_cuda(const Tensor* src);
 
-Tensor* tensor_from_cuda(const Tensor* src);
+Tensor* tensor_to_cpu(const Tensor* src);
 
 
 //Tensor* tensor_create(float* data, int* shape, int ndim, int requires_grad);

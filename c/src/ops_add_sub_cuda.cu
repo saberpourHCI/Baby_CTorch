@@ -74,18 +74,18 @@ __global__ void tensor_sub_broadcast_kernel(const float* a,
     c[idx] = a[idx_a] - b[idx_b];
 }
 
-__global__ void tensor_add_kernel_depricated(const float* a, const float* b, float* c, int size) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if(idx < size) {
-        c[idx] = a[idx] + b[idx];
-    }
-}
-__global__ void tensor_sub_kernel_depricated(const float* a, const float* b, float* c, int size) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if(idx < size) {
-        c[idx] = a[idx] - b[idx];
-    }
-}
+// __global__ void tensor_add_kernel_depricated(const float* a, const float* b, float* c, int size) {
+//     int idx = blockIdx.x * blockDim.x + threadIdx.x;
+//     if(idx < size) {
+//         c[idx] = a[idx] + b[idx];
+//     }
+// }
+// __global__ void tensor_sub_kernel_depricated(const float* a, const float* b, float* c, int size) {
+//     int idx = blockIdx.x * blockDim.x + threadIdx.x;
+//     if(idx < size) {
+//         c[idx] = a[idx] - b[idx];
+//     }
+// }
 __global__ void backward_add_broadcast_kernel(
     const float* grad_out,
     float* grad_a,
@@ -175,6 +175,8 @@ Tensor* tensor_sum_cuda(const Tensor* a) {
     int shape[1] = {1};
     Tensor* out = create_empty_tensor(shape, 1, 1, DEVICE_CUDA);
     sum_kernel<<<numBlocks, blockSize>>>(a->data, out->data, a->size);
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
     return out;
 }
 

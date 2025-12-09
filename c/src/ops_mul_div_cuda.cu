@@ -1,5 +1,4 @@
 #include "cuda_utils.h"
-// #include "ops_add_sub_cuda.h"
 #include "tensor.h"
 #include "cuda_runtime.h"
 #include <stdlib.h>
@@ -8,124 +7,6 @@
 #include <stddef.h>
 
 
-
-/*
-
-Tensor* tensor_add_cpu(const Tensor* a, const Tensor* b) {
-    int out_ndim;
-    int* out_shape = broadcast_shapes(a->shape, a->ndim, b->shape, b->ndim, &out_ndim);
-    if (!out_shape) {
-        fprintf(stderr, "Error: Incompatible shapes for addition\n");
-        return NULL;
-    }
-
-    int out_size = compute_size(out_shape, out_ndim);
-    float* out_data = (float*)malloc(out_size * sizeof(float));
-    if (!out_data) {
-        free(out_shape);
-        fprintf(stderr, "Error: Memory allocation failed\n");
-        return NULL;
-    }
-
-    // Iterate through all elements using linear indexing
-    for (int i = 0; i < out_size; i++) {
-        // Compute multi-dimensional index
-        int idx_a = 0, idx_b = 0;
-        int rem = i;
-        for (int d = out_ndim - 1; d >= 0; d--) {
-            int coord = rem % out_shape[d];
-            rem /= out_shape[d];
-
-            int a_dim = (d >= out_ndim - a->ndim) ? a->shape[d - (out_ndim - a->ndim)] : 1;
-            int b_dim = (d >= out_ndim - b->ndim) ? b->shape[d - (out_ndim - b->ndim)] : 1;
-
-            int a_stride = (d >= out_ndim - a->ndim) ? a->strides[d - (out_ndim - a->ndim)] : 0;
-            int b_stride = (d >= out_ndim - b->ndim) ? b->strides[d - (out_ndim - b->ndim)] : 0;
-
-            if (a_dim != 1) idx_a += coord * a_stride;
-            if (b_dim != 1) idx_b += coord * b_stride;
-        }
-
-        out_data[i] = a->data[idx_a] + b->data[idx_b];
-    }
-    
-    Tensor* out = create_tensor(out_data, out_shape, out_ndim, a->device);
-    // if(a->device==b->device){
-    //     Tensor* out = create_tensor(out_data, out_shape, out_ndim, a->device);
-    // }
-    // else {
-    //     printf("Both tensors should be on the same device");
-    // }
-
-    free(out_shape);
-    return out;
-}
-
-*/
-
-/*
-
-__global__ void tensor_add_broadcast_kernel(
-    const float* __restrict__ a,
-    const float* __restrict__ b,
-    float* __restrict__ out,
-    const int* __restrict__ out_shape, int out_ndim,
-    const int* __restrict__ a_shape,  const int* __restrict__ a_strides, int a_ndim,
-    const int* __restrict__ b_shape,  const int* __restrict__ b_strides, int b_ndim,
-    int out_size
-) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= out_size) return;
-
-    int idx_a = 0;
-    int idx_b = 0;
-    int rem = i;
-
-    // This mirrors your CPU broadcasting logic:
-    // walk from last dimension to first, compute coord in out,
-    // map to A/B indices using their shapes/strides and broadcasting rules.
-    for (int d = out_ndim - 1; d >= 0; --d) {
-        int coord = rem % out_shape[d];
-        rem /= out_shape[d];
-
-        // Map to A's dim/stride
-        int a_dim = 1;
-        int a_str = 0;
-        int a_offset = d - (out_ndim - a_ndim);
-        if (a_offset >= 0) {
-            a_dim = a_shape[a_offset];
-            a_str = a_strides[a_offset];
-        }
-
-        // Map to B's dim/stride
-        int b_dim = 1;
-        int b_str = 0;
-        int b_offset = d - (out_ndim - b_ndim);
-        if (b_offset >= 0) {
-            b_dim = b_shape[b_offset];
-            b_str = b_strides[b_offset];
-        }
-
-        if (a_dim != 1) {
-            idx_a += coord * a_str;
-        }
-        if (b_dim != 1) {
-            idx_b += coord * b_str;
-        }
-    }
-
-    out[i] = a[idx_a] + b[idx_b];
-}
-
-
-*/
-
-// __global__ void set_float_to_data_kernel(float* data, int size, float val) {
-//     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//     if(idx < size) {
-//         data[idx] = val;// a[idx] + b[idx];
-//     }
-// }
 
 __global__ void tensor_mul_broadcast_kernel(const float* a, 
     const float* b, 
@@ -259,9 +140,13 @@ __global__ void backward_div_broadcast_kernel(
     float g    = grad_out[i];
     float aval = data_a[idx_a];
     float bval = data_b[idx_b];
-    float epsilon = 0.00001;
-    if (grad_a) atomicAdd(&grad_a[idx_a], g / (bval + epsilon));
-    if (grad_b) atomicAdd(&grad_b[idx_b], -g * aval / (bval * bval + epsilon));
+    float epsilon = 0.000001;
+    if(bval==0.0) {
+        bval+=epsilon;
+    }
+    
+    if (grad_a) atomicAdd(&grad_a[idx_a], g / (bval));
+    if (grad_b) atomicAdd(&grad_b[idx_b], -g * aval / (bval * bval));
 }
 
 
@@ -278,17 +163,17 @@ __global__ void backward_div_broadcast_kernel(
 extern "C"
 Tensor* tensor_mul_cuda(const Tensor* A, const Tensor* B) {
     if (!A || !B) {
-        fprintf(stderr, "tensor_add_cuda: NULL input\n");
+        fprintf(stderr, "tensor_mul_cuda: NULL input\n");
         return NULL;
     }
 
     if (A->device != DEVICE_CUDA || B->device != DEVICE_CUDA) {
-        fprintf(stderr, "tensor_add_cuda: both tensors must be on CUDA\n");
+        fprintf(stderr, "tensor_mull_cuda: both tensors must be on CUDA\n");
         return NULL;
     }
 
     if (A->size != B->size) {
-        fprintf(stderr, "tensor_add_cuda: size mismatch, add would broadcast!\n");
+        fprintf(stderr, "tensor_mul_cuda: size mismatch, mull would broadcast!\n");
         // return NULL;
     }
 
@@ -368,12 +253,12 @@ Tensor* tensor_mul_cuda(const Tensor* A, const Tensor* B) {
 extern "C"
 Tensor* tensor_div_cuda(const Tensor* A, const Tensor* B) {
     if (!A || !B) {
-        fprintf(stderr, "tensor_sub_cuda: NULL input\n");
+        fprintf(stderr, "tensor_div_cuda: NULL input\n");
         return NULL;
     }
 
     if (A->device != DEVICE_CUDA || B->device != DEVICE_CUDA) {
-        fprintf(stderr, "tensor_sub_cuda: both tensors must be on CUDA\n");
+        fprintf(stderr, "tensor_div_cuda: both tensors must be on CUDA\n");
         return NULL;
     }
 
@@ -477,7 +362,7 @@ void backward_mul_cuda(Tensor* out) {
     // printf("backward_mul_cuda\n");
     // printf("\n\n\n\n ENTERED THE BACKWARD_ADD_CUDA\n\n\n\n");
     if(out->device != DEVICE_CUDA) {
-        printf("backward_add_cuda argument not on CUDA device");
+        printf("backward_mul_cuda argument not on CUDA device");
     }
 
     Tensor* A = out->parents[0];
@@ -495,7 +380,7 @@ void backward_mul_cuda(Tensor* out) {
 
     if (A && A->requires_grad) {
         if (!A->grad) {
-            printf("ERROR: 'backward_add_cpu' tensor 'A' requires grad, but grad pointer not allocated\n");
+            printf("ERROR: 'backward_mul_cuda' tensor 'A' requires grad, but grad pointer not allocated\n");
             CUDA_CHECK(cudaMalloc((void**)&A->grad, A->size * sizeof(float)));
             CUDA_CHECK(cudaMemset(A->grad, 0, A->size * sizeof(float)));
             // A->grad = (float*)calloc(A->size, sizeof(float));
@@ -508,7 +393,7 @@ void backward_mul_cuda(Tensor* out) {
 
     if (B && B->requires_grad) {
         if (!B->grad) {
-            printf("ERROR: 'backward_add_cpu' tensor 'B' requires grad, but grad pointer not allocated\n");
+            printf("ERROR: 'backward_mul_cuda' tensor 'B' requires grad, but grad pointer not allocated\n");
             CUDA_CHECK(cudaMalloc((void**)&B->grad, B->size * sizeof(float)));
             CUDA_CHECK(cudaMemset(B->grad, 0, B->size * sizeof(float)));
             // B->grad = (float*)calloc(B->size, sizeof(float));
@@ -679,7 +564,7 @@ void backward_div_cuda(Tensor* out) {
     // printf("backward_div_cuda\n");
     // printf("\n\n\n\n ENTERED THE BACKWARD_SUB_CUDA\n\n\n\n");
     if(out->device != DEVICE_CUDA) {
-        printf("backward_sub_cuda argument not on CUDA device");
+        printf("backward_div_cuda argument not on CUDA device");
     }
 
     Tensor* A = out->parents[0];

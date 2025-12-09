@@ -11,19 +11,18 @@
 
 Tensor* MSE(Tensor* y_pred, Tensor* y_true) {
     if(y_pred->size != y_true->size) {
-        printf("inside 'MSE', size mismatch between y_pred and y_true");
+        printf("inside 'MSE', size mismatch between y_pred %d and y_true %d", y_pred->size, y_true->size);
     }
-    
-    
     Tensor* diff = tensor_sub_autograd(y_pred, y_true);
     // printf("tesnsor_mul --> ");
     Tensor* sqr = tensor_mul_autograd(diff, diff);
     // printf("tesnsor_sum --> ");
     Tensor* sum = tensor_sum_autograd(sqr);
-    float N_val = (float)y_pred->size;
-    int N_shape[1] = {1};
-    Tensor* N = create_tensor(&N_val, N_shape, 1, 0, y_pred->device);
-    // printf("tesnsor_div --> ");
-    Tensor* mean = tensor_div_autograd(sum, N);
-    return mean;
+    // float N_val = (float)y_pred->size;
+    // int N_shape[1] = {1};
+    // Tensor* N = create_tensor_autograd(&N_val, N_shape, 1, 0, y_pred->device);
+    // // printf("tesnsor_div --> ");
+    // Tensor* mean = tensor_div_autograd(sum, N);
+    // return mean;
+    return sum;
 }
