@@ -613,7 +613,7 @@ Tensor* tensor_to_cuda(const Tensor* src) {
 }
 extern "C"
 Tensor* tensor_to_cpu(const Tensor* src) {
-    printf("p0- ");
+    // printf("p0- ");
     if (!src) return NULL;
 
     if (src->device == DEVICE_CPU) {
@@ -621,21 +621,29 @@ Tensor* tensor_to_cpu(const Tensor* src) {
         return NULL;
     }
 
-    printf("p1- ");
+    // printf("p1- ");
     Tensor* dst = create_empty_tensor(src->shape,
                                     src->ndim,
                                     src->requires_grad,
                                     DEVICE_CPU);
     
 
-    printf("p2- ");
+    // printf("p2- ");
     CUDA_CHECK(cudaMemcpy(dst->data, 
                         src->data,
                         src->size * sizeof(float),
                     cudaMemcpyDeviceToHost ));
     CUDA_CHECK(cudaDeviceSynchronize());
     
-    printf("p3- ");
+    if(src->requires_grad==1) {
+        CUDA_CHECK(cudaMemcpy(dst->grad, 
+                            src->grad,
+                            src->size * sizeof(float),
+                        cudaMemcpyDeviceToHost ));
+        CUDA_CHECK(cudaDeviceSynchronize());
+    }
+
+    // printf("p3- ");
     if (!dst->shape || !dst->strides || !dst->data) {
         fprintf(stderr, "tensor_fom_cuda: failed to allocate shape/strides\n");
         free(dst->shape);
@@ -644,8 +652,8 @@ Tensor* tensor_to_cpu(const Tensor* src) {
         free(dst);
         return NULL;
     }
-    print_tensor_info(src);
-    printf("p4- %f", dst->data[0]);
+    // print_tensor_info(src);
+    // printf("p4- %f", dst->data[0]);
 
 
     return dst;

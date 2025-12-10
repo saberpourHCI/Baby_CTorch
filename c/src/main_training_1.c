@@ -34,8 +34,9 @@ void create_sine_dataset(int N,
     const float two_pi = 2.0f * 3.1415926535f;
     for (int i = 0; i < N; ++i) {
         float t = (two_pi * i) / (float)N;
-        x_data[i] = t;           // input
-        y_data[i] = sinf(t)/(N);     // target
+        x_data[i] = i;           // input
+        y_data[i] = i*i;// sinf(t);//(N);     // target
+        // y_data[i] = exp(-0.1 * t) * sin(2.0 * t);
     }
 
     int shape[2] = { N, 1 };
@@ -78,7 +79,7 @@ Tensor* y = malloc(sizeof(Tensor*));
 
 // Tensor** x_cpu = &x; 
 // Tensor** y_cpu = &y;
-create_sine_dataset(300, &x_cpu, &y);
+create_sine_dataset(50, &x_cpu, &y);
 printf("after create_sine\n");
 print_tensor_info(x_cpu);
 Tensor* x = tensor_to_cuda(x_cpu);
@@ -111,8 +112,8 @@ Linear* l2 = linear_create(model, 16, 1, DEVICE_CUDA);
 
 
 // printf("\np2\n");
-float lr = 0.002;
-int epochs = 100;
+float lr = 0.0001;
+int epochs = 200;
 FILE *fp = fopen("loss_data.csv", "w");
     if (!fp) {
         perror("Failed to open file");
@@ -132,6 +133,10 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
         // printf("\np4\n");
         // printf("here is the y_pred: \n");
         // print_tensor_info(y_pred);
+        if(epoch == 5) {
+            printf("before step: ##########################################################################");
+            Tensor* t = tensor_to_cpu(l1->W);
+        }
         
         Tensor* loss   = MSE(y_pred, y_true);     // scalar tensor on CUDA
         // printf("\nhere is the loss: \n");
@@ -158,6 +163,38 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
         // Optimizer step
         // printf("\np0\n");
         model_sgd_step(model, lr);
+        Tensor* t1 = loss;
+        if(epoch == 1) {
+            printf("After step: ##########################################################################");
+            // Tensor* t = tensor_to_cpu(l1->W);
+            int cnt=0;
+            // while(t1 != NULL) {
+            //     printf("\n%d:", cnt++);
+            printf("\nloss grad: *************************************** \n");
+            Tensor* t2 = tensor_to_cpu(t1);
+            print_tensor_info(t2);
+            printf("\nsum (input): *************************************** \n");
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]);
+            print_tensor_info(t2);
+            printf("\nsqr (input): *************************************** \n");
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]);
+            print_tensor_info(t2);
+            printf("\ndiff (input): *************************************** \n");
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]);
+            print_tensor_info(t2);
+            printf("\nlinear add (input): *************************************** \n");
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]);
+            print_tensor_info(t2);
+            printf("\nlinear matmul (input): *************************************** \n");
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]);
+            print_tensor_info(t2);
+
+            
+
+            // t1 = t1->parents[0];
+            // }
+            // break;
+        }
         // Tensor* l = tensor_from_cuda(loss);
         
         // printf("\np1\n");
@@ -173,14 +210,23 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
         free_tensor(y_pred);
         free_tensor(loss);
     }
+    // Tensor* y_pred = linear_forward(l1, x);
+    // y_pred = relu_autograd(y_pred);
+    // y_pred = linear_forward(l2, y_pred);
+    // y_pred = l1->W;
+    // // Tensor* y_pred = forward(l1, l2, x);
+    // Tensor* y_cpu = tensor_to_cpu(y_pred);
+    // x_cpu = tensor_to_cpu(x);
+    // for(int i=0; i<x->size; i++) {
+    //     fprintf(fp, "%d,%f\n", i, y_cpu->data[i]);
+    // }
     fclose(fp);
+
     // Call Python to plot
     int ret = system("python ../py/plot.py");
     if (ret != 0) {
         fprintf(stderr, "Failed to run Python script\n");
     }
-
-    return 0;
     // Cleanup
     free_tensor(x);
     free_tensor(y_true);
