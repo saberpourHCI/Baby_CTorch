@@ -1,4 +1,4 @@
 num_layers 3
 lr  0.1
-epochs 2000
+epochs 2001
 hidden_layer 8

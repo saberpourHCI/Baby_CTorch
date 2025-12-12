@@ -1,7 +1,7 @@
-#include "include/tensor.h"
-#include "include/cuda_utils.h"
-#include "include/activation_cpu.h"
-#include "include/activation_cuda.h"
+#include "../include/tensor.h"
+#include "../include/cuda_utils.h"
+#include "../include/activation_cpu.h"
+#include "../include/activation_cuda.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

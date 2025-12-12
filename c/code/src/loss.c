@@ -1,7 +1,7 @@
-#include "include/tensor.h"
-#include "include/cuda_utils.h"
-#include "include/ops_add_sub.h"
-#include "include/ops_mul_div.h"
+#include "../include/tensor.h"
+#include "../include/cuda_utils.h"
+#include "../include/ops_add_sub.h"
+#include "../include/ops_mul_div.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

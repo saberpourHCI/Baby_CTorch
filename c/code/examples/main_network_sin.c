@@ -1,20 +1,20 @@
 
 #include <math.h>
-#include "include/tensor.h"
-#include "include/tensor.h"
+#include "../include/tensor.h"
+#include "../include/tensor.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
 
-#include "include/model.h"
-#include "include/linear.h"
-#include "include/activation.h"
-#include "include/loss.h"
-#include "include/cuda_utils.h"
+#include "../include/model.h"
+#include "../include/linear.h"
+#include "../include/activation.h"
+#include "../include/loss.h"
+#include "../include/cuda_utils.h"
 #include "cuda_runtime.h"
-#include "utils.c"
+#include "../src/utils.c"
 
 
 
@@ -173,7 +173,29 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
 
         Tensor* t1 = tensor_to_cpu(loss);
 
-        
+        if (epoch % 10 == 0) {
+            printf("wirting in the frames now ^^^^^^^^^^^^^^^^^^^^^\n");
+            Tensor* y_true_cpu = tensor_to_cpu(y_true);
+            printf("\n Here is the y_true : \n");
+            print_tensor_info(y_true_cpu);
+            
+            // Tensor* y_pred = forward(linear_layer_list, num_layers, x);
+            Tensor* y_cpu = tensor_to_cpu(y_pred);
+            char filename[128];
+            sprintf(filename, "code/frames/y_pred_%05d.txt", epoch);
+
+            FILE *out = fopen(filename, "w");
+            if (!out) { perror(filename); exit(1); }
+
+            for (int i = 0; i < y_cpu->size; i++) {
+                fprintf(out, "%f %f\n", y_true_cpu->data[i], y_cpu->data[i]);
+            }
+
+            fclose(out);
+            // free_tensor(y_true_cpu);
+            // free_tensor(y_cpu);
+        }
+
 
         t1 = loss;
         /*

@@ -1,8 +1,8 @@
-#include "include/linear.h"
-#include "include/cuda_utils.h"
-#include "include/tensor.h"
-#include "include/ops_add_sub.h"
-#include "include/ops_matmul.h"
+#include "../include/linear.h"
+#include "../include/cuda_utils.h"
+#include "../include/tensor.h"
+#include "../include/ops_add_sub.h"
+#include "../include/ops_matmul.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>

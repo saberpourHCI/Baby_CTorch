@@ -1,5 +1,5 @@
-#include "include/cuda_utils.h"
-#include "include/tensor.h"
+#include "../include/cuda_utils.h"
+#include "../include/tensor.h"
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
