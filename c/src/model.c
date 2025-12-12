@@ -1,5 +1,5 @@
 // model.c
-#include "model.h"
+#include "include/model.h"
 
 void model_init(Model* m) {
     param_list_init(&m->params);

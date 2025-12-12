@@ -1,7 +1,7 @@
-#include "cuda_utils.h"
+#include "include/cuda_utils.h"
 #include "cuda_runtime.h"
-#include "params.h"
-#include "tensor.h"
+#include "include/params.h"
+#include "include/tensor.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

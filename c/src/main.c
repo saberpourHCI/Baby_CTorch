@@ -1,10 +1,10 @@
-#include "tensor.h"
-#include "ops_add_sub.h"
-#include "ops_mul_div.h"
-#include "ops_matmul.h"
-#include "loss.h"
-#include "activation.h"
-#include "linear.h"
+#include "include/tensor.h"
+#include "include/ops_add_sub.h"
+#include "include/ops_mul_div.h"
+#include "include/ops_matmul.h"
+#include "include/loss.h"
+#include "include/activation.h"
+#include "include/linear.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

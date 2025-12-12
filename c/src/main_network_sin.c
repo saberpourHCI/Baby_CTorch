@@ -1,19 +1,20 @@
 
 #include <math.h>
-#include "tensor.h"
-#include "tensor.h"
+#include "include/tensor.h"
+#include "include/tensor.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
 
-#include "model.h"
-#include "linear.h"
-#include "activation.h"
-#include "loss.h"
-#include "cuda_utils.h"
+#include "include/model.h"
+#include "include/linear.h"
+#include "include/activation.h"
+#include "include/loss.h"
+#include "include/cuda_utils.h"
 #include "cuda_runtime.h"
+#include "utils.c"
 
 
 
@@ -37,7 +38,7 @@ void create_sine_dataset(int N,
         float t = (two_pi * i) / (float)N;
         x_data[i] = 2.0*(float)(i)/(float)(N) - 1.0;           // input
         // y_data[i] = (float)(3*i+1)/(float)(3*N+1);// (float)(i*i)/(float)(N*N);// sinf(t);//(N);     // target
-        y_data[i] = (float)(i*i*i)/(float)(N*N*N);// sinf(t);//(N);     // target
+        y_data[i] = sinf(t);//(N);     // target
         // y_data[i] = exp(-0.1 * t) * sin(2.0 * t);
     }
 
@@ -59,17 +60,36 @@ void create_sine_dataset(int N,
     *y_cpu_out = y_cpu;
 }
 
-Tensor* forward(Linear* l1, Linear* l2, Tensor* x) {
-    Tensor* h = linear_forward(l1, x);
-    h = tanh_autograd(h);
-    Tensor* y_pred = linear_forward(l2, h);
+Tensor* forward(Linear** l, int num_l, Tensor* x) {
+    Tensor* h = x;
+    for(int i=0; i<num_l; i++) {
+        h = linear_forward(l[i], h);
+        if(i!=num_l-1) {
+            h = tanh_autograd(h);
+        }
+    }
+
+    Tensor* y_pred = h;
     return y_pred;
 }
 
+// Tensor* forward_old(Linear* l1, Linear* l2, Linear* l3, Tensor* x) {
+//     Tensor* h = linear_forward(l1, x);
+//     h = tanh_autograd(h);
+//     h = linear_forward(l2, h);
+//     h = tanh_autograd(h);
+//     h = linear_forward(l3, h);
+//     Tensor* y_pred = tanh_autograd(h);
+
+//     return y_pred;
+// }
 
 
 int main() {
 
+Params p = {0};
+
+load_params("params.txt", &p);
 
 float* d = malloc(sizeof(float*));
 Tensor* x_cpu = malloc(sizeof(Tensor*));
@@ -105,35 +125,25 @@ y_true->backward = NULL;
 Model* model = malloc(sizeof(Model*));
 // printf("\np0\n");
 model_init(model);
-Linear* l1 = linear_create(model, 1, 16, DEVICE_CUDA);
-Linear* l2 = linear_create(model, 16, 1, DEVICE_CUDA);
+int num_layers = p.num_layers;// 3;
+int hidden_size = p.hidden_layer;
+Linear** linear_layer_list = malloc(num_layers*sizeof(Linear*));
+int in_feat, out_feat;
+for (int i =0; i<num_layers; i++) {
+    in_feat = hidden_size; 
+    out_feat= hidden_size;
+    if(i==0){
+        in_feat = 1;// hidden_size;
+    }
+    if (i==num_layers-1) {
+        out_feat = 1;
+    }
+    Linear* t = linear_create(model, in_feat, out_feat, DEVICE_CUDA);
+    linear_layer_list[i] = t;// linear_create(model, 1, 64, DEVICE_CUDA);
+}
 
-
-
-//Read the parameters
-// int epochs = 0;
-// float lr = 0.0f;
-// char key[64];
-// char value[64];
-
-// FILE *file = fopen("param.txt", "r");
-// if (file == NULL) {
-//     perror("Error opening file");
-//     return 1;
-// }
-
-// while (fscanf(file, "%63[^=]=%63s", key, value) == 2) {
-//     if (strcmp(key, "epochs") == 0) {
-//         epochs = atoi(value);
-//     } else if (strcmp(key, "lr") == 0) {
-//         lr = atof(value);
-//     }
-// }
-// fclose(file);
-
-// printf("\np2\n");
-float lr = 0.2;
-int epochs = 2000;
+float lr = p.lr;// 0.03;
+int epochs = p.epochs;// 2000;
 FILE *fp = fopen("loss_data.csv", "w");
     if (!fp) {
         perror("Failed to open file");
@@ -146,17 +156,10 @@ FILE *fp = fopen("loss_data.csv", "w");
 printf("entered for loop.\n");
 int m = epochs - 1;
 for (int epoch = 0; epoch < epochs; ++epoch) {
-        // if (epoch<= epochs/2) {
-        //     lr = 0.000001;
-        // }
-        // else {
-        //     lr = 0.000001;
-        // }
-        // printf("\np3\n");
-        // Forward
+
         printf("\n\nForward-------------------------------------------->\n\n");
         printf("\nforward: ");
-        Tensor* y_pred = forward(l1, l2, x);      // on CUDA
+        Tensor* y_pred = forward(linear_layer_list, num_layers, x);//(l1, l2, l3, x);      // on CUDA
         Tensor* loss   = MSE(y_pred, y_true);
         model_zero_grad(model);
         int shape[1] = {1};
@@ -165,21 +168,15 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
         tensor_backward(loss, root_grad->data);   // assume NULL means grad=1 for scalar
         printf("\n");
         model_sgd_step(model, lr);
-        // printf("\np-1\n");
 
-        // printf("\np6\n");
         printf("\n\nBackward-------------------------------------------->\n\n");
-        // float* root_grad;
-        // cudaMalloc((void**)&root_grad, sizeof(float));
 
-        // printf("\np4\n");
-        // printf("here is the y_pred: \n");
-        // print_tensor_info(y_pred);
         Tensor* t1 = tensor_to_cpu(loss);
 
         
 
         t1 = loss;
+        /*
         if(epoch == m) {
             printf("After step: ##########################################################################");
             // Tensor* t = tensor_to_cpu(l1->W);
@@ -201,24 +198,27 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
             printf("\ndiff (input): *************************************** \n");
             t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]);
             print_tensor_info(t2);
+            printf("\ntanh2 (input): *************************************** \n");
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]);
+            print_tensor_info(t2);
             printf("\nlinear2 b: *************************************** \n");
-            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[1]);
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[1]);
             print_tensor_info(t2);
             printf("\nlinear2 matmul (input): *************************************** \n");
-            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]);
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]);
             print_tensor_info(t2);
             printf("\nlinear2 W: *************************************** \n");
             t2 = tensor_to_cpu(l2->W);
             print_tensor_info(t2);
             printf("\nrelu (input): *************************************** \n");
-            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]);
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]);
             print_tensor_info(t2);
 
             printf("\nlinear1 b: *************************************** \n");
-            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[1]);
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[1]);
             print_tensor_info(t2);
             printf("\nlinear1 matmul (input): *************************************** \n");
-            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]);
+            t2 = tensor_to_cpu(t1->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]->parents[0]);
             print_tensor_info(t2);
             printf("\nlinear1 W: *************************************** \n");
             t2 = tensor_to_cpu(l1->W);
@@ -230,12 +230,9 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
             // }
             // break;
         }
-        // Tensor* l = tensor_from_cuda(loss);
+        */
         
-        // printf("\np1\n");
-        // printf("\nepoch: %d\n loss: ", epoch, l->data[0]);
         printf("\nepoch: %d\n", epoch);
-        // free(l);
         print_tensor_info(loss);
         printf("\nss_cpu is: ");
         Tensor* loss_cpu = tensor_to_cpu(loss);
@@ -245,22 +242,15 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
         free_tensor(y_pred);
         free_tensor(loss);
     }
-    // Tensor* y_pred = linear_forward(l1, x);
-    // y_pred = relu_autograd(y_pred);
-    // y_pred = linear_forward(l2, y_pred);
-    // y_pred = l1->W;
+
     Tensor* y_true_cpu = tensor_to_cpu(y_true);
     printf("\n Here is the y_true : \n");
     print_tensor_info(y_true_cpu);
     
-    Tensor* y_pred = forward(l1, l2, x);
+    Tensor* y_pred = forward(linear_layer_list, num_layers, x);
     Tensor* y_cpu = tensor_to_cpu(y_pred);
     printf("\n Here is the y_cpu : \n");
     print_tensor_info(y_cpu);
-    // x_cpu = tensor_to_cpu(x);
-    // for(int i=0; i<x->size; i++) {
-    //     fprintf(fp, "%d,%f\n", i, y_cpu->data[i]);
-    // }
     fclose(fp);
 
 
@@ -269,7 +259,31 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
 
 
     // Call Python to plot
-    int ret = system("python ../py/plot.py");
+    int ret = system("python ../py/plot_loss.py");
+    if (ret != 0) {
+        fprintf(stderr, "Failed to run Python script\n");
+    }
+
+    // Write predictions and ground truth to file
+    FILE *out = fopen("plot_data.txt", "w");
+    if (!out) {
+        perror("plot_data.txt");
+        exit(1);
+    }
+
+    // Assuming both tensors are 1-D of same length
+    int N = y_true_cpu->size;  // modify if your tensor stores size differently
+
+    for (int i = 0; i < N; i++) {
+        float yt = y_true_cpu->data[i];
+        float yp = y_cpu->data[i];
+        fprintf(out, "%f %f\n", yt, yp);
+    }
+
+    fclose(out);
+
+    // Call Python to plot
+    ret = system("python ../py/plot_gt_vs_pred.py");
     if (ret != 0) {
         fprintf(stderr, "Failed to run Python script\n");
     }
@@ -280,14 +294,11 @@ for (int epoch = 0; epoch < epochs; ++epoch) {
 
 
 
-
-
-
     // Cleanup
     free_tensor(x);
     free_tensor(y_true);
-    linear_free(l1);
-    linear_free(l2);
+    // linear_free(l1);
+    // linear_free(l2);
     model_free(model);
 
 

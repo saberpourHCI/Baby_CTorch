@@ -1,6 +1,6 @@
-#include "cuda_utils.h"
+#include "include/cuda_utils.h"
 // #include "ops_add_sub_cuda.h"
-#include "tensor.h"
+#include "include/tensor.h"
 #include "cuda_runtime.h"
 
 extern "C"

@@ -1,17 +1,16 @@
 
 #include <math.h>
-#include "tensor.h"
-#include "tensor.h"
+#include "include/tensor.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
-#include "model.h"
-#include "linear.h"
-#include "activation.h"
-#include "loss.h"
-#include "cuda_utils.h"
+#include "include/model.h"
+#include "include/linear.h"
+#include "include/activation.h"
+#include "include/loss.h"
+#include "include/cuda_utils.h"
 #include "cuda_runtime.h"
 
 
