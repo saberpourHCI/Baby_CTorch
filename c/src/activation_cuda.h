@@ -10,6 +10,10 @@ extern "C" {
 Tensor* relu_cuda(Tensor* x);
 void backward_relu_cuda(Tensor* out);
 
+Tensor* tanh_cuda(Tensor* x);
+
+void backward_tanh_cuda(Tensor* out);
+
 
 #ifdef __cplusplus
 }

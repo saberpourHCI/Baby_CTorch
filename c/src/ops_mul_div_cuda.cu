@@ -68,6 +68,36 @@ __global__ void tensor_div_broadcast_kernel(const float* a,
 }
 
 
+__global__ void backward_square_broadcast_kernel(
+    const float* data_a,
+    const float* grad_out,
+    float* grad_a,
+    const int* out_shape, int out_ndim,
+    const int* a_shape,  const int* a_strides, int a_ndim,
+    int out_size
+) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= out_size) return;
+
+    int idx_a = 0;
+    int rem = i;
+    for (int d = out_ndim - 1; d >= 0; --d) {
+        int coord = rem % out_shape[d];
+        rem /= out_shape[d];
+
+        int a_dim = (d >= out_ndim - a_ndim) ? a_shape[d - (out_ndim - a_ndim)] : 1;
+
+        int a_str = (d >= out_ndim - a_ndim) ? a_strides[d - (out_ndim - a_ndim)] : 0;
+
+        if (a_dim != 1) idx_a += coord * a_str;
+    }
+
+    float g = grad_out[i];
+
+    if (grad_a) atomicAdd(&grad_a[idx_a], 2.0f*g*data_a[idx_a]);
+}
+
+
 __global__ void backward_mul_broadcast_kernel(
     const float* data_a,
     const float* data_b,
@@ -354,6 +384,97 @@ Tensor* tensor_div_cuda(const Tensor* A, const Tensor* B) {
 //         printf("Pointer is on CPU\n");
 //     }
 // }
+
+extern "C"
+void backward_square_cuda(Tensor* out) {
+    printf("sqr --> ");
+    // printf("backward_mul_cuda\n");
+    // printf("\n\n\n\n ENTERED THE BACKWARD_ADD_CUDA\n\n\n\n");
+    if(out->device != DEVICE_CUDA) {
+        printf("backward_mul_cuda argument not on CUDA device");
+    }
+
+    Tensor* A = out->parents[0];
+    // Tensor* B = out->parents[1];
+
+    
+    // Assume all on CUDA; you can add asserts:
+    // A->device == DEVICE_CUDA, B->device == DEVICE_CUDA, out->device == DEVICE_CUDA
+
+    // const int out_ndim = out->ndim;
+    const int a_ndim = A->ndim;
+    const int out_size = out->size;
+    // printf("\n\n\n********************************\n%d %d %d %d \n***************************************\n\n\n", out_ndim, a_ndim, b_ndim, out_size);
+
+    if (A && A->requires_grad) {
+        if (!A->grad) {
+            printf("ERROR: 'backward_mul_cuda' tensor 'A' requires grad, but grad pointer not allocated\n");
+            CUDA_CHECK(cudaMalloc((void**)&A->grad, A->size * sizeof(float)));
+            CUDA_CHECK(cudaMemset(A->grad, 0, A->size * sizeof(float)));
+        }
+    }
+
+
+    int* a_shape_device;
+    // int* b_shape_device; 
+    int* out_shape_device;
+    int* a_strides_device;
+    // int* b_strides_device;
+
+    
+
+    CUDA_CHECK(cudaMalloc((void**)&out_shape_device, out->ndim * sizeof(int)));
+    CUDA_CHECK(cudaMemcpy(out_shape_device, out->shape,
+                          out->ndim * sizeof(int),
+                          cudaMemcpyHostToDevice));
+    
+
+    CUDA_CHECK(cudaMalloc((void**)&a_shape_device, a_ndim * sizeof(int)));
+    CUDA_CHECK(cudaMemcpy(a_shape_device, A->shape,
+                          a_ndim * sizeof(int),
+                          cudaMemcpyHostToDevice));
+
+    // CUDA_CHECK(cudaMalloc((void**)&b_shape_device, b_ndim * sizeof(int)));
+    // CUDA_CHECK(cudaMemcpy(b_shape_device, B->shape,
+    //                       b_ndim * sizeof(int),
+    //                       cudaMemcpyHostToDevice));
+
+    CUDA_CHECK(cudaMalloc((void**)&a_strides_device, a_ndim * sizeof(int)));
+    CUDA_CHECK(cudaMemcpy(a_strides_device, A->strides,
+                          a_ndim * sizeof(int),
+                          cudaMemcpyHostToDevice));
+
+
+    // CUDA_CHECK(cudaMalloc((void**)&b_strides_device, b_ndim * sizeof(int)));
+    // CUDA_CHECK(cudaMemcpy(b_strides_device, B->strides,
+    //                       b_ndim * sizeof(int),
+    //                       cudaMemcpyHostToDevice));
+
+    
+    
+    // Launch kernel
+    int blockSize = 256;
+    int numBlocks = (out_size + blockSize - 1) / blockSize;
+
+    backward_square_broadcast_kernel<<<numBlocks, blockSize>>>(
+        A->data,
+        out->grad,
+        A->grad,
+        out_shape_device, out->ndim,
+        a_shape_device, a_strides_device, A->ndim,
+        out->size
+    );
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+ 
+    // Free temp device arrays
+    CUDA_CHECK(cudaFree(out_shape_device));
+    CUDA_CHECK(cudaFree(a_shape_device));
+    CUDA_CHECK(cudaFree(a_strides_device));
+    // CUDA_CHECK(cudaFree(b_shape_device));
+    // CUDA_CHECK(cudaFree(b_strides_device));
+
+}
 
 
 extern "C"

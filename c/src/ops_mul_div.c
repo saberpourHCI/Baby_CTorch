@@ -36,6 +36,37 @@ Tensor* tensor_div(const Tensor* a, const Tensor* b) {
 
 
 
+Tensor* tensor_square_autograd(Tensor* A) {
+    printf("mul -->");
+    Tensor* out = tensor_mul(A, A);
+    if (!out) return NULL;
+
+    if (out->requires_grad) {
+        // out->requires_grad = 1;
+        out->parents = (Tensor**)malloc(2 * sizeof(Tensor*));
+        out->parents[0] = A;
+        out->n_parents = 1;
+        if(out->device == DEVICE_CPU) {
+            out->backward = backward_square_cpu;
+            // out->grad = (float*)calloc(out->size, sizeof(float));
+        } else if(out->device == DEVICE_CUDA) {
+            out->backward = backward_square_cuda;
+            // printf("\n\nbackward cuda is assigned!!!\n\n");
+            // CUDA_CHECK(cudaMalloc((void**)&out->grad, out->size * sizeof(float)));
+            
+            // CUDA_CHECK(cudaMemset(out->grad, 0, out->size * sizeof(float)));
+        } else {
+            printf("inside tensor_mul_autograd, the device is unknown!  \n");
+            return NULL;
+        }
+
+        
+    }
+
+    return out;
+}
+
+
 
 Tensor* tensor_mul_autograd(Tensor* A, Tensor* B) {
     printf("mul -->");

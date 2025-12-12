@@ -13,6 +13,8 @@ void backward_add_cpu(Tensor* out);
 
 void backward_sub_cpu(Tensor* out);
 
+void backward_sum_cpu(Tensor* out);
+
 
 Tensor* tensor_add_autograd_cpu(Tensor* A, Tensor* B);
 

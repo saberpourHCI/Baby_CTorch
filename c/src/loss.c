@@ -15,7 +15,8 @@ Tensor* MSE(Tensor* y_pred, Tensor* y_true) {
     }
     Tensor* diff = tensor_sub_autograd(y_pred, y_true);
     // printf("tesnsor_mul --> ");
-    Tensor* sqr = tensor_mul_autograd(diff, diff);
+    // Tensor* sqr = tensor_mul_autograd(diff, diff);
+    Tensor* sqr = tensor_square_autograd(diff);
     // printf("tesnsor_sum --> ");
     Tensor* sum = tensor_sum_autograd(sqr);
     float N_val = (float)y_pred->size;

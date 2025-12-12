@@ -22,6 +22,8 @@ Tensor* tensor_mul_autograd_cuda(Tensor* A, Tensor* B);
 
 Tensor* tensor_div_autograd_cuda(Tensor* A, Tensor* B);
 
+void backward_square_cuda(Tensor* out);
+
 // void where_is_int_pointer(int* ptr);
 
 #ifdef __cplusplus

@@ -163,7 +163,16 @@ __global__ void sum_kernel(
     atomicAdd(&data_out[0], data_a[i]);
 }
 
-
+__global__ void backward_sum_kernel(
+    const float* grad_out,
+    float* grad_a,
+    int input_size
+) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= input_size) return;
+    grad_a[i] += grad_out[0];
+    // atomicAdd(&grad_a[0], data_a[i]);
+}
 
 
 
@@ -385,6 +394,121 @@ Tensor* tensor_sub_cuda(const Tensor* A, const Tensor* B) {
     // printf("FINISHED executing tesnor_add_cuda-------------------->");
 
     return out;
+}
+
+
+extern "C"
+void backward_sum_cuda(Tensor* out) {
+    printf("add --> ");
+    // printf("backward_add_cuda\n");
+    // printf("\n\n\n\n ENTERED THE BACKWARD_ADD_CUDA\n\n\n\n");
+    if(out->device != DEVICE_CUDA) {
+        printf("backward_add_cuda argument not on CUDA device");
+    }
+
+    Tensor* A = out->parents[0];
+    // Tensor* B = out->parents[1];
+
+        // Assume all on CUDA; you can add asserts:
+    // A->device == DEVICE_CUDA, B->device == DEVICE_CUDA, out->device == DEVICE_CUDA
+
+    // const int out_ndim = out->ndim;
+    // const int a_ndim = A->ndim;
+    // const int b_ndim = B->ndim;
+    const int out_size = out->size;
+    // printf("\n\n\n********************************\n%d %d %d %d \n***************************************\n\n\n", out_ndim, a_ndim, b_ndim, out_size);
+
+    if (A && A->requires_grad) {
+        if (!A->grad) {
+            printf("ERROR: 'backward_add_cpu' tensor 'A' requires grad, but grad pointer not allocated\n");
+            // A->grad = (float*)calloc(A->size, sizeof(float));
+            // if (!A->grad) {
+            //     fprintf(stderr, "backward_add: failed to allocate A->grad\n");
+            //     return;
+            // }
+        }
+    }
+
+    // if (B && B->requires_grad) {
+    //     if (!B->grad) {
+    //         printf("ERROR: 'backward_add_cpu' tensor 'B' requires grad, but grad pointer not allocated\n");
+    //         // B->grad = (float*)calloc(B->size, sizeof(float));
+    //         // if (!B->grad) {
+    //         //     fprintf(stderr, "backward_add: failed to allocate B->grad\n");
+    //         //     return;
+    //         // }
+    //     }
+    // }
+
+    // int* a_shape_device;
+    // int* b_shape_device; 
+    // int* out_shape_device;
+    // int* a_strides_device;
+    // int* b_strides_device;
+    // // float* a_grads_device;
+    // // float* b_grads_device;
+    // float* out_grads_device;
+
+
+
+    // CUDA_CHECK(cudaMalloc((void**)&out_shape_device, out_ndim * sizeof(int)));
+    // CUDA_CHECK(cudaMemcpy(out_shape_device, out->shape,
+    //                       out_ndim * sizeof(int),
+    //                       cudaMemcpyHostToDevice));
+
+    // CUDA_CHECK(cudaMalloc((void**)&a_shape_device, a_ndim * sizeof(int)));
+    // CUDA_CHECK(cudaMemcpy(a_shape_device, A->shape,
+    //                       a_ndim * sizeof(int),
+    //                       cudaMemcpyHostToDevice));
+
+    // CUDA_CHECK(cudaMalloc((void**)&b_shape_device, b_ndim * sizeof(int)));
+    // CUDA_CHECK(cudaMemcpy(b_shape_device, B->shape,
+    //                       b_ndim * sizeof(int),
+    //                       cudaMemcpyHostToDevice));
+
+    // CUDA_CHECK(cudaMalloc((void**)&a_strides_device, a_ndim * sizeof(int)));
+    // CUDA_CHECK(cudaMemcpy(a_strides_device, A->strides,
+    //                       a_ndim * sizeof(int),
+    //                       cudaMemcpyHostToDevice));
+
+
+    // CUDA_CHECK(cudaMalloc((void**)&b_strides_device, b_ndim * sizeof(int)));
+    // CUDA_CHECK(cudaMemcpy(b_strides_device, B->strides,
+    //                       b_ndim * sizeof(int),
+    //                       cudaMemcpyHostToDevice));
+
+    
+    // CUDA_CHECK(cudaMalloc((void**)&out_grads_device, out->size * sizeof(float)));
+    // CUDA_CHECK(cudaMemcpy(out_grads_device, out->grad,
+    //                       out->size * sizeof(float),
+    //                       cudaMemcpyHostToDevice));
+    
+    
+    
+    // Launch kernel
+    int blockSize = 256;
+    int numBlocks = (out_size + blockSize - 1) / blockSize;
+
+
+//     __global__ void backward_sum_kernel(
+//     const float* grad_out,
+//     float* grad_a,
+//     int input_size
+// )
+
+    backward_sum_kernel<<<numBlocks, blockSize>>>(
+        // out_grads_device,//
+        out->grad,
+        A->grad,
+        A->size
+    );
+
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+    printf("############ from insid 'backward_sum_cuda': \n");
+    print_tensor_info(out);
+    print_tensor_info(A);
+
 }
 
 

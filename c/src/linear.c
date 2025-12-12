@@ -31,7 +31,8 @@ Linear* linear_create(Model* model, int in_features, int out_features, Device de
     printf("\n&&&&&&&&&&&&&&&&&&&&&&&here is the limit %f \n", limit);
 
     for (int i = 0; i < size_w; i++) {
-        w[i] = frand_uniform(-limit, limit);
+        // w[i] = frand_uniform(-limit, limit);
+        w[i] = frand_uniform(0, limit);
     }
 
     l->W = create_tensor(w, w_shape, 2, 1, dev);
@@ -42,7 +43,7 @@ Linear* linear_create(Model* model, int in_features, int out_features, Device de
     float* b = malloc(size_b * sizeof(float));
 
     for (int i = 0; i < size_b; i++) {
-        b[i] = 0.0f;
+        b[i] = frand_uniform(0, limit);// 0.0f;
     }
 
     l->b = create_tensor(b, b_shape, 1, 1, dev);

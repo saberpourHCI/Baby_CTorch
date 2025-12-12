@@ -127,7 +127,29 @@ Tensor* tensor_sub_cpu(const Tensor* a, const Tensor* b) {
 }
 
 
+void backward_sum_cpu(Tensor* out) {
+    printf("sum --> ");
+    // printf("backward_sum_cuda\n");
+    Tensor* a = out->parents[0];
+    // Tensor* ones = tensor_ones(a->shape, a->ndim, 1, out->device);
+    float* grads = malloc(a->size * sizeof(float));
+    for(int i=0; i<a->size; i++) {
+        grads[i] = out->grad[i];
+    }
 
+    for(int i=0; i<a->size; i++) {
+        a->grad[i] += out->grad[0];
+    }
+    // if(out->device==DEVICE_CUDA) {
+
+    //     CUDA_CHECK(cudaMemcpy(a->grad, grads, a->size * sizeof(float), cudaMemcpyHostToDevice));
+    // }
+    // else if(out->device==DEVICE_CPU) {
+        // memcpy((void**)&a->grad, grads, a->size * sizeof(float));// grads;//ones->data;
+    // }
+    free(grads);
+    
+}
 
 
 

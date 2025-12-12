@@ -7,6 +7,8 @@ Tensor* tensor_mul_cpu(const Tensor* a, const Tensor* b);
 
 Tensor* tensor_div_cpu(const Tensor* a, const Tensor* b);
 
+void backward_square_cpu(Tensor* out);
+
 void backward_mul_cpu(Tensor* out);
 
 void backward_div_cpu(Tensor* out);

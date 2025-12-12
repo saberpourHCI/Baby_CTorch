@@ -3,6 +3,39 @@
 #include <string.h>
 #include <stdio.h>
 
+void backward_square_cpu(Tensor* out) {
+
+    Tensor* A = out->parents[0];
+
+    for (int i = 0; i < out->size; i++) {
+        int idx_a = 0, rem = i;
+        for (int d = out->ndim - 1; d >= 0; d--) {
+            int coord = rem % out->shape[d];
+            rem /= out->shape[d];
+
+            int a_has = (d >= out->ndim - A->ndim);
+
+            int a_dim = a_has ? A->shape[d - (out->ndim - A->ndim)] : 1;
+
+            int a_str = a_has ? A->strides[d - (out->ndim - A->ndim)] : 0;
+
+            if (a_dim != 1) idx_a += coord * a_str;
+
+        }
+
+        float g = out->grad ? out->grad[i] : 1.0f;
+
+        // Chain rule:
+        //   dL/dA[idx_a] += dL/dout[i] * B[idx_b]
+        //   dL/dB[idx_b] += dL/dout[i] * A[idx_a]
+        // Note: multiple i can map to the same idx_a/idx_b (broadcast reduction),
+        // so we accumulate (+=) instead of assigning.
+        if (A->grad) A->grad[idx_a] += A->data[idx_a] * 2.0f*g;
+    }
+}
+
+
+
 void backward_mul_cpu(Tensor* out) {
 
     Tensor* A = out->parents[0];

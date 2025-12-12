@@ -659,4 +659,3 @@ Tensor* tensor_to_cpu(const Tensor* src) {
     return dst;
 }
 
-

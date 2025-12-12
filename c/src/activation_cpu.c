@@ -26,3 +26,25 @@ void backward_relu_cpu(Tensor* out) {
     }
 }
 
+
+
+
+
+
+Tensor* tanh_cpu(Tensor* x){//}, Tensor* output) {
+    Tensor* out = create_empty_tensor(x->shape, x->ndim, x->requires_grad, x->device);
+    // assumes input->size == output->size
+    for (int i = 0; i < x->size; i++) {
+        float t = x->data[i];
+        out->data[i] = tanhf(t);  // standard C tanh function
+    }
+    return out;
+}
+
+void backward_tanh_cpu(Tensor* out){//}, Tensor* output) {
+    Tensor* a = out->parents[0];
+    for(int i=0; i<out->size; i++) {
+        float t = out->data[i];
+        a->grad[i] += out->grad[i] * (1-t*t);// out->data[i]>0.0? out->grad[i] : 0.0;
+    }
+}
