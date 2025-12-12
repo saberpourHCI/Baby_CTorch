@@ -1,7 +1,7 @@
 # CPytorch
 My own implementation of Pytorch
 
-
+![Training Progress](py/training_progress.gif)
 
 
 open "x64 Native Tools Command Prompt for VS22", run the following:
@@ -18,6 +18,7 @@ nvcc code/src/tensor.cu code/src/cuda_utils.cu code/src/ops_add_sub_cpu.c code/s
 '''
 
 This would generate the "main.exe" file, that you can execute later.
+
 
 
 
