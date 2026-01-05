@@ -27,7 +27,6 @@ typedef struct Tensor {
     int requires_grad;
     int backward_visited;
     // int grad_initialized;
-    // ... whatever else you already have
     struct Tensor** parents;
     int n_parents;
     void (*backward)(struct Tensor* self);
@@ -39,7 +38,6 @@ typedef struct Tensor {
 
 
 
-// Function declarations (prototypes)
 void free_tensor(Tensor* tensor);
 
 Tensor* tensor_ones(const int* shape, int ndim, int requires_grad, Device dev);
